@@ -70,6 +70,13 @@
 .rumours h4 { margin-bottom: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
 .rumour { margin: 5px 0 0; font-size: 12px; line-height: 1.5; color: var(--ink-2); }
 .rumour b { font-weight: 600; color: var(--ink); }
+.rumours.hearsay { border-left-color: var(--ink-3); }
+.tale + .tale { margin-top: 9px; padding-top: 7px; border-top: 1px solid var(--line); }
+.rumour.hop1 { padding-left: 10px; }
+.rumour.hop2 { padding-left: 20px; }
+.rumour.hop3 { padding-left: 30px; }
+.rumour.hop1, .rumour.hop2, .rumour.hop3 { color: var(--ink-3); font-style: italic; }
+.rumour.hop1 b, .rumour.hop2 b, .rumour.hop3 b { font-style: normal; color: var(--ink-2); }
 
 /* ---- Commands ---- */
 .status-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg-2); }

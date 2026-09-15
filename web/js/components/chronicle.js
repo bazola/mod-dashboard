@@ -5,13 +5,27 @@ import { clock, full } from "../lib/format.js";
 import { empty, openKeys } from "./common.js";
 
 const FACTIONS = [["A", "Alliance"], ["H", "Horde"]];
+const HOPS = ["", "Carried on", "Further still", "Far and wide"];
 const when = ts => new Date(ts * 1000).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+
+// A story is told where it happened, then retold at each stop along the road (chronicle_tale, round two).
+function story(tellings) {
+  return h("div.tale", tellings.map(t => h(`p.rumour.hop${Math.min(t.hop, 3)}`, { title: `told ${when(t.told)}` },
+    h("b", t.hop === 0 ? `${t.origin}: ` : `${HOPS[Math.min(t.hop, 3)]}${t.places.length ? ` (${t.places.join(", ")})` : ""}: `),
+    `“${t.words}”`)));
+}
+
+function stories(tales, kind) {
+  const byRoot = new Map();
+  for (const t of tales) if (t.kind === kind) byRoot.set(t.root, [...(byRoot.get(t.root) || []), t]);
+  return [...byRoot.values()].map(ts => story(ts.sort((a, b) => a.hop - b.hop)));
+}
 
 function entry(e, open) {
   const key = `${e.faction}${e.start}`;
-  const near = e.rumours.filter(r => r.distance === 0);
-  const far = new Map();
-  for (const r of e.rumours) if (r.distance !== 0) far.set(r.words, [...(far.get(r.words) || []), r.zone_name]);
+  const tales = e.tales || [];
+  const enemy = FACTIONS.find(([id]) => id !== e.faction)[1];
+  const ours = stories(tales, "ours"), heard = stories(tales, "enemy");
   return h("details.card.entry", { dataset: { key }, open },
     h("summary",
       h("div.card-main", h("div.entry-title", e.title), h("div.card-sub", { title: full(e.start) }, `${when(e.start)} – ${clock(e.end)}`)),
@@ -19,10 +33,8 @@ function entry(e, open) {
     h("div.entry-body",
       h("div.entry-by", icon("feather", 13), e.scribe, e.flag && h("span.badge.warn", { title: "Judge flag kept for review" }, `flag: ${e.flag}`)),
       h("div.prose", e.body.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => h("p", p))),
-      e.rumours.length > 0 && h("div.rumours",
-        h("h4", "Word going around"),
-        near.map(r => h("p.rumour", h("b", `${r.zone_name}: `), `“${r.words}”`)),
-        [...far].map(([words, places]) => h("p.rumour", h("b", `Told further off (${places.join(", ")}): `), `“${words}”`)))));
+      ours.length > 0 && h("div.rumours", h("h4", "Word going around"), ours),
+      heard.length > 0 && h("div.rumours.hearsay", h("h4", `Word of the ${enemy}`), heard)));
 }
 
 export function mountChronicle(panel) {
