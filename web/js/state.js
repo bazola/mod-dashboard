@@ -18,6 +18,7 @@ export const state = {
   lore: null,             // data/lore.json from gen_backstories.py
   companies: null,        // data/companies.json from regard.py (plan 14)
   chronicle: null,        // data/chronicle.json from chronicler.py (plan 19)
+  market: null,           // data/market.json from market.py (plan 17 §3.E)
   commands: null,         // GET /commands
   history: { bots: [], avg: [] },
   conn: { ok: false, ts: 0, text: "Connecting…" },

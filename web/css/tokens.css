@@ -41,6 +41,17 @@
   --alliance: #5b93ff;
   --horde: #f0555a;
 
+  /* Item quality (the game's own colors; common follows the ink) and coins */
+  --q0: #9d9d9d;
+  --q1: var(--ink);
+  --q2: #1eff00;
+  --q3: #3b8cff;
+  --q4: #b65cf5;
+  --q5: #ff8000;
+  --coin-g: #e8c25a;
+  --coin-s: #c3c8d0;
+  --coin-c: #c9824a;
+
   /* Map and marker states */
   --map: #05070a;
   --zone: #3f4a5b;
@@ -108,6 +119,15 @@
 
   --alliance: #2563eb;
   --horde: #c02a33;
+
+  --q0: #7a7a7a;
+  --q2: #178a00;
+  --q3: #0060c0;
+  --q4: #8a2fd0;
+  --q5: #c25e00;
+  --coin-g: #a87d10;
+  --coin-s: #7b828d;
+  --coin-c: #9a5a2a;
 
   --map: #d9dee5;
   --zone: #97a1ad;

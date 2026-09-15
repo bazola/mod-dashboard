@@ -4,6 +4,7 @@ import { state, emit } from "./state.js";
 const REFRESH_MS = 2000;
 const DATA_MS = 30000;
 const LORE_MS = 300000;
+const MARKET_MS = 60000;   // market.py rewrites its file every 10 minutes
 const HISTORY = 90;   // samples kept for the top-bar sparklines (3 minutes at 2 s)
 
 async function getJSON(url) {
@@ -57,9 +58,10 @@ export function startPolling() {
   }, REFRESH_MS);
 
   // Data files are rewritten by the Python services; redraw only when a new one was generated.
+  const stampOf = doc => doc.generated ?? doc.generated_at;
   const watch = (url, key, ms) => loop(async () => {
     const next = await getJSON(url);
-    if (!state[key] || next.generated === undefined || next.generated !== state[key].generated) {
+    if (!state[key] || stampOf(next) === undefined || stampOf(next) !== stampOf(state[key])) {
       state[key] = next;
       emit(key);
     }
@@ -68,4 +70,5 @@ export function startPolling() {
   watch("data/companies.json", "companies", DATA_MS);
   watch("data/chronicle.json", "chronicle", DATA_MS);
   watch("data/lore.json", "lore", LORE_MS);
+  watch("data/market.json", "market", MARKET_MS);
 }

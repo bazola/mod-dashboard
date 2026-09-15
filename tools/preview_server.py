@@ -96,6 +96,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(json.dumps(self.worldmap).encode())
         if path == "/bots":
             return self.send_json(self.bots())
+        if path.startswith("/data/") and os.environ.get("PREVIEW_DATA"):
+            # Serve data files from a scratch directory instead of web/data (PREVIEW_DATA=/some/dir).
+            f = Path(os.environ["PREVIEW_DATA"]) / Path(path[len("/data/"):]).name
+            if f.is_file():
+                return self.send_json(f.read_bytes())
+            return self.send_error(404)
         return super().do_GET()
 
     def send_json(self, body):

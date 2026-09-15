@@ -78,6 +78,56 @@
 .rumour.hop1, .rumour.hop2, .rumour.hop3 { color: var(--ink-3); font-style: italic; }
 .rumour.hop1 b, .rumour.hop2 b, .rumour.hop3 b { font-style: normal; color: var(--ink-2); }
 
+/* ---- Market ---- */
+.money { display: inline-flex; gap: 4px; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.coin.g { color: var(--coin-g); }
+.coin.s { color: var(--coin-s); }
+.coin.c { color: var(--coin-c); }
+.good { font-weight: 600; }
+.good.q0 { color: var(--q0); }
+.good.q1 { color: var(--q1); }
+.good.q2 { color: var(--q2); }
+.good.q3 { color: var(--q3); }
+.good.q4 { color: var(--q4); }
+.good.q5 { color: var(--q5); }
+
+.houses { display: grid; gap: 10px; padding: 8px 6px 4px; }
+.house-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-size: 12.5px; color: var(--ink-2); }
+.house-head b { font-weight: 600; color: var(--ink); }
+.house-n { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.stack { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg-3); }
+.stack span { height: 100%; }
+.seg-merchant, .dot-merchant { background: var(--gold); }
+.seg-bot, .dot-bot { background: var(--active); }
+.seg-player, .dot-player { background: var(--alliance); }
+.mlegend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 6px 2px; font-size: 11px; color: var(--ink-3); }
+.mlegend span { display: inline-flex; align-items: center; gap: 5px; }
+.mlegend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; }
+.dot-sales { background: var(--gold); }
+.dot-listed { background: var(--active); }
+.dot-expired { background: var(--cold); }
+
+.mchart-wrap { padding: 8px 6px 0; }
+.mchart { display: block; width: 100%; height: 84px; overflow: visible; }
+.mchart .hit { fill: transparent; }
+.mchart g:hover .hit { fill: var(--bg-3); }
+.mchart .bar { fill: var(--gold); }
+.mchart .ln { fill: none; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .85; }
+.mchart .ln.listed { stroke: var(--active); }
+.mchart .ln.expired { stroke: var(--cold); stroke-dasharray: 3 2; }
+.mchart-axis { display: flex; justify-content: space-between; padding: 2px 6px 0; font-size: 10.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.good-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; }
+.good-row + .good-row { box-shadow: inset 0 1px 0 var(--line); }
+.good-main { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 12.5px; }
+.good-main .good { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.good-price { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.learned { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--ink-3); }
+.learned .money { font-size: 11px; font-weight: 500; }
+.learned.up .ico { color: var(--warm); }
+.learned.down .ico { color: var(--cold); }
+.learned.none { font-style: italic; }
+
 /* ---- Commands ---- */
 .status-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg-2); }
 .status-card .seal { --fc: var(--warm); }
