@@ -74,6 +74,9 @@
   #map.art .zone-label { color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; }
   .zone-label::before { display: none; }
   #map:not(.labels) .zone-label { display: none; }
+  .co-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .co-tip b { display: block; }
+  .co-tip span { display: block; color: var(--muted); }
   @media (max-width: 720px) {
     body { flex-direction: column; }
     #map { min-height: 55vh; }
@@ -110,6 +113,7 @@
     <div class="legend">
       <label><input type="checkbox" id="opt-art" checked> map art</label>
       <label><input type="checkbox" id="opt-outlines"> zone outlines</label>
+      <label><input type="checkbox" id="opt-holdings" checked> company holdings</label>
     </div>
     <details class="commands" id="commands">
       <summary>Commands</summary>
@@ -126,6 +130,14 @@
       <ol id="feel-warm"></ol>
       <div class="feel-head">Coldest ties</div>
       <ol id="feel-cold"></ol>
+    </details>
+    <details class="commands" id="companies">
+      <summary>Companies</summary>
+      <div class="status" id="co-state">No company data yet.</div>
+      <div class="feel-head">Companies</div>
+      <ol id="co-list"></ol>
+      <div class="feel-head">Recent incidents</div>
+      <ol id="co-incidents"></ol>
     </details>
     <div class="status" id="status">Connecting…</div>
   </header>
@@ -151,6 +163,7 @@ const map = L.map("map", { crs: L.CRS.Simple, minZoom: -6, maxZoom: 3, zoomSnap:
 const artLayer = L.layerGroup().addTo(map);
 const zoneArtLayer = L.layerGroup().addTo(map);
 const zoneLayer = L.layerGroup().addTo(map);
+const holdingLayer = L.layerGroup().addTo(map);   // below the markers: added first
 const markerLayer = L.layerGroup().addTo(map);
 
 let continent = localGet("continent") || "0";
@@ -164,6 +177,8 @@ const markers = new Map();
 const zoneArt = new Map();    // manifest file -> L.imageOverlay
 let regard = null;            // data/regard.json from regard.py, null until it exists
 let lore = null;              // data/lore.json from gen_backstories.py project: who each character is
+let companies = null;         // data/companies.json from regard.py: seats, holdings, relations, incidents (plan 14)
+let selectedCompany = null;   // guild id shown in the detail panel when no character is selected
 const REGARD_MS = 30000;
 
 function localGet(key) { try { return localStorage.getItem("dash." + key); } catch { return null; } }
@@ -321,7 +336,7 @@ function drawLists() {
 function drawDetail() {
   const p = players.find(x => x.guid === selected);
   const box = $("detail");
-  if (!p) { box.replaceChildren(); return; }
+  if (!p) { box.replaceChildren(...companyDetail(selectedCompany)); return; }
   const leader = players.find(x => x.guid === p.group_leader);
   const master = players.find(x => x.guid === p.master);
   const fields = [
@@ -511,9 +526,169 @@ async function refreshRegard() {
   }
 }
 
+// ---- Companies (regard.py, plan 14) ----------------------------------------
+
+// Horde companies in reds and ambers, Alliance companies in blues and violets; stable per guild id.
+function companyColor(gid) {
+  const c = companies && companies.companies[String(gid)];
+  if (!c) return css("--zone");
+  const same = Object.entries(companies.companies).filter(([, o]) => o.faction === c.faction).map(([id]) => Number(id)).sort((a, b) => a - b);
+  const share = same.length > 1 ? same.indexOf(Number(gid)) / (same.length - 1) : 0.5;
+  const hue = c.faction === "Horde" ? 350 + share * 55 : 185 + share * 95;
+  return `hsl(${hue % 360}, 70%, ${45 + (same.indexOf(Number(gid)) % 2) * 10}%)`;
+}
+
+const companyName = gid => (companies && companies.companies[String(gid)]?.name) || (gid ? `company #${gid}` : "nobody");
+const stanceClass = s => s >= 10 ? "warm" : s <= -10 ? "cold" : "";
+
+function companyLink(gid) {
+  const a = document.createElement("span");
+  a.className = "who";
+  const dot = document.createElement("i");
+  dot.className = "co-dot";
+  dot.style.background = companyColor(gid);
+  a.append(dot, document.createTextNode(companyName(gid)));
+  a.onclick = () => selectCompany(gid);
+  return a;
+}
+
+function selectCompany(gid) {
+  selectedCompany = gid;
+  selected = null;
+  lastResult = null;
+  drawLists();
+  drawDetail();
+  drawHoldings();
+}
+
+function drawHoldings() {
+  holdingLayer.clearLayers();
+  if (!companies || !worldmap || !$("opt-holdings").checked) return;
+  const mine = selectedCompany ? companies.companies[String(selectedCompany)] : null;
+  const seatZones = new Set((mine?.seats || []).map(s => s.zone));
+  for (const z of worldmap.zones) {
+    if (String(z.map) !== continent) continue;
+    const land = companies.lands[String(z.zone)];
+    if (!land || (!land.holder && !seatZones.has(z.zone))) continue;
+    const seat = seatZones.has(z.zone);
+    const color = land.holder ? companyColor(land.holder) : css("--zone");
+    const rect = L.rectangle(areaBounds(z), {
+      color: seat ? companyColor(selectedCompany) : color,
+      weight: seat ? 3 : land.challenger ? 2 : 1,
+      dashArray: land.challenger ? "6 4" : null,
+      fillColor: color,
+      fillOpacity: mine ? (land.holder === selectedCompany ? 0.35 : 0.08) : 0.2,
+    }).addTo(holdingLayer);
+    const tip = document.createElement("div");
+    tip.className = "co-tip";
+    const head = document.createElement("b");
+    head.textContent = `${land.name} (${land.levels[0]}–${land.levels[1]})`;
+    tip.append(head);
+    const line = text => { const s = document.createElement("span"); s.textContent = text; tip.append(s); };
+    line(land.holder ? `Held by ${companyName(land.holder)}` : "Held by nobody");
+    if (land.challenger) line(`Contested by ${companyName(land.challenger)}`);
+    if (land.influence.length) line("Influence: " + land.influence.slice(0, 3).map(([g, v]) => `${companyName(g)} ${v}`).join(", "));
+    if (seat) line(`${companyName(selectedCompany)} keep a seat here`);
+    rect.bindTooltip(tip, { sticky: true });
+    if (land.holder) rect.on("click", () => selectCompany(land.holder));
+  }
+}
+
+function drawCompanies() {
+  if (!companies) return;
+  const list = Object.entries(companies.companies)
+    .sort(([, a], [, b]) => a.faction.localeCompare(b.faction) || a.name.localeCompare(b.name));
+  const held = Object.values(companies.lands).filter(l => l.holder).length;
+  const contested = Object.values(companies.lands).filter(l => l.challenger).length;
+  $("co-state").textContent = `${list.length} companies, ${held} lands held, ${contested} contested, ${companies.relations.length} relations · updated ${new Date(companies.generated * 1000).toLocaleTimeString()}`;
+  $("co-list").replaceChildren(...list.map(([gid, c]) => {
+    const li = document.createElement("li");
+    li.className = "feel";
+    const w = document.createElement("span");
+    w.className = "w";
+    w.textContent = `${c.faction} · holds ${c.holds.length} · contests ${c.contests.length}`;
+    li.append(companyLink(Number(gid)), w);
+    return li;
+  }));
+  $("co-incidents").replaceChildren(...companies.incidents.slice(0, 25).map(i => incidentRow(i)));
+}
+
+function incidentRow(i) {
+  const li = document.createElement("li");
+  const t = document.createElement("span");
+  t.className = "t";
+  t.textContent = new Date(i.ts * 1000).toLocaleTimeString();
+  const d = document.createElement("span");
+  d.className = stanceClass(i.delta * 10);
+  d.textContent = i.detail;
+  li.append(t, d);
+  li.title = i.kind + (i.delta ? ` · stance ${i.delta > 0 ? "+" : ""}${i.delta}` : "");
+  li.onclick = () => selectCompany(i.a);
+  return li;
+}
+
+function companyDetail(gid) {
+  const c = companies && gid && companies.companies[String(gid)];
+  if (!c) return [];
+  const head = text => { const h = document.createElement("div"); h.className = "feel-head"; h.textContent = text; return h; };
+  const desc = (text, cls = "feel-desc") => { const d = document.createElement("div"); d.className = cls; d.textContent = text; return d; };
+  const title = document.createElement("strong");
+  title.append(companyLink(gid), document.createTextNode(` · ${c.faction}`));
+  const nodes = [title];
+  if (c.seats.length) {
+    nodes.push(head("Seats"));
+    for (const s of c.seats) nodes.push(desc(`${s.band} · ${s.zone_name}`, "feel-desc lore"), desc(s.hold));
+  }
+  const landNames = zones => zones.map(z => companies.lands[String(z)]?.name).filter(Boolean).join(", ");
+  nodes.push(head("Holds"), desc(landNames(c.holds) || "nothing yet", "feel-desc lore"));
+  if (c.contests.length) nodes.push(head("Contests"), desc(landNames(c.contests), "feel-desc lore"));
+  const rels = companies.relations.filter(r => r.a === gid || r.b === gid);
+  if (rels.length) {
+    nodes.push(head("Other companies"));
+    for (const r of rels) {
+      const other = r.a === gid ? r.b : r.a;
+      const line = document.createElement("div");
+      line.className = "feel";
+      const w = document.createElement("span");
+      w.className = "w " + stanceClass(r.stance);
+      w.textContent = `${r.words} · ${r.stance}`;
+      w.title = `seeded as ${r.disposition}`;
+      line.append(companyLink(other), w);
+      nodes.push(line);
+      if (r.origin) nodes.push(desc(r.origin));
+      const says = r.a === gid ? r.a_says : r.b_says;
+      if (says) nodes.push(desc(`They say: “${says}”`));
+    }
+  }
+  const mine = companies.incidents.filter(i => i.a === gid || i.b === gid).slice(0, 10);
+  if (mine.length) {
+    const ol = document.createElement("ol");
+    ol.style.cssText = "list-style:none;margin:0;padding:0;font-size:12px";
+    ol.append(...mine.map(incidentRow));
+    nodes.push(head("Recent incidents"), ol);
+  }
+  return nodes;
+}
+
+async function refreshCompanies() {
+  try {
+    const res = await fetch("data/companies.json", { cache: "no-store" });
+    if (res.ok) {
+      companies = await res.json();
+      drawCompanies();
+      drawHoldings();
+      if (!busy && !selected) drawDetail();
+    }
+  } catch {
+  } finally {
+    setTimeout(refreshCompanies, REGARD_MS);
+  }
+}
+
 function select(guid, pan) {
   if (guid !== selected) lastResult = null;
   selected = guid;
+  selectedCompany = null;
   const p = players.find(x => x.guid === guid);
   if (p && pan && !p.instance && CONTINENTS.some(([id]) => id === String(p.map))) {
     if (String(p.map) !== continent) setContinent(String(p.map), false);
@@ -532,6 +707,7 @@ function setContinent(id, fit = true) {
   const bounds = drawZones();
   if (fit && bounds) map.fitBounds(bounds, { padding: [20, 20] });
   drawArt();
+  drawHoldings();
   updateLabelVisibility();
   drawMarkers();
 }
@@ -636,6 +812,8 @@ async function start() {
   $("opt-outlines").checked = localGet("outlines") === "1";
   $("opt-art").addEventListener("change", () => { localSet("art", $("opt-art").checked ? "1" : "0"); setContinent(continent, false); });
   $("opt-outlines").addEventListener("change", () => { localSet("outlines", $("opt-outlines").checked ? "1" : "0"); setContinent(continent, false); });
+  $("opt-holdings").checked = localGet("holdings") !== "0";
+  $("opt-holdings").addEventListener("change", () => { localSet("holdings", $("opt-holdings").checked ? "1" : "0"); drawHoldings(); });
   try {
     const res = await fetch("worldmap", { cache: "no-store" });
     worldmap = await res.json();
@@ -650,6 +828,7 @@ async function start() {
   refresh();
   refreshRegard();
   refreshLore();
+  refreshCompanies();
 }
 
 start();
