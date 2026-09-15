@@ -146,6 +146,8 @@
       <ol id="co-list"></ol>
       <div class="feel-head">Candidacies</div>
       <ol id="co-candidacy"></ol>
+      <div class="feel-head">Fallen companies</div>
+      <ol id="co-ended"></ol>
       <div class="feel-head">Recent incidents</div>
       <ol id="co-incidents"></ol>
     </details>
@@ -632,6 +634,24 @@ function drawCompanies() {
   // Candidacy (plan 18 P3): how far each company has come toward taking a real player in.
   const cands = companies.candidacy || [];
   $("co-candidacy").replaceChildren(...(cands.length ? cands.map(candidacyRow) : [Object.assign(document.createElement("li"), { textContent: "No company has taken notice of anyone yet." })]));
+  // Company lifecycle (plan 18 P4b): companies that broke apart; their rows are archived under the ended id.
+  const ended = companies.ended || [];
+  $("co-ended").replaceChildren(...(ended.length ? ended.map(endedRow) : [Object.assign(document.createElement("li"), { textContent: "No company has fallen." })]));
+}
+
+const CAUSE_WORDS = { disbanded: "broke apart", vanished: "gone without word", orphaned: "remnants found" };
+
+function endedRow(e) {
+  const li = document.createElement("li");
+  li.className = "feel";
+  const n = document.createElement("span");
+  n.textContent = e.name || `company #${e.guildid}`;
+  const w = document.createElement("span");
+  w.className = "w";
+  w.textContent = `${CAUSE_WORDS[e.cause] || e.cause} · ${e.members} last members · ${new Date(e.ended_at * 1000).toLocaleString()}`;
+  w.title = `was id ${e.guildid} · archived as ended #${e.ended_id}`;
+  li.append(n, w);
+  return li;
 }
 
 const STAGE_WORDS = { noticed: "noticed", spoken_for: "spoken for", offered: "offered a place", joined: "sworn in" };
