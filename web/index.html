@@ -77,6 +77,14 @@
   .co-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
   .co-tip b { display: block; }
   .co-tip span { display: block; color: var(--muted); }
+  .chronicle { max-height: 360px; overflow-y: auto; margin-top: 6px; }
+  .chronicle details { border-top: 1px solid var(--line); padding: 4px 0; }
+  .chronicle summary { color: var(--ink); cursor: pointer; }
+  .chronicle summary .t { color: var(--muted); font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .chronicle p { margin: 6px 0; font-size: 12px; line-height: 1.5; }
+  .chronicle .by { color: var(--muted); font-size: 11px; font-style: italic; }
+  .chronicle .rumour { color: var(--muted); font-size: 11px; margin: 2px 0 2px 10px; }
+  .chronicle .rumour b { color: var(--ink); font-weight: 500; }
   @media (max-width: 720px) {
     body { flex-direction: column; }
     #map { min-height: 55vh; }
@@ -139,6 +147,12 @@
       <div class="feel-head">Recent incidents</div>
       <ol id="co-incidents"></ol>
     </details>
+    <details class="commands" id="chronicle">
+      <summary>Chronicle</summary>
+      <div class="status" id="ch-state">No chronicle yet.</div>
+      <div class="tabs" id="ch-tabs"><button data-f="A">Alliance</button><button data-f="H">Horde</button></div>
+      <div class="chronicle" id="ch-entries"></div>
+    </details>
     <div class="status" id="status">Connecting…</div>
   </header>
   <div id="lists"></div>
@@ -178,6 +192,8 @@ const zoneArt = new Map();    // manifest file -> L.imageOverlay
 let regard = null;            // data/regard.json from regard.py, null until it exists
 let lore = null;              // data/lore.json from gen_backstories.py project: who each character is
 let companies = null;         // data/companies.json from regard.py: seats, holdings, relations, incidents (plan 14)
+let chronicle = null;         // data/chronicle.json from chronicler.py: each faction scribe's watches and rumours (plan 19)
+let chronicleFaction = localGet("chronicle") || "A";
 let selectedCompany = null;   // guild id shown in the detail panel when no character is selected
 const REGARD_MS = 30000;
 
@@ -670,6 +686,66 @@ function companyDetail(gid) {
   return nodes;
 }
 
+// ---- Chronicle (chronicler.py) --------------------------------------------
+
+function drawChronicle() {
+  if (!chronicle) return;
+  for (const b of $("ch-tabs").children) b.classList.toggle("on", b.dataset.f === chronicleFaction);
+  const scribe = chronicle.scribes[chronicleFaction];
+  const entries = chronicle.entries.filter(e => e.faction === chronicleFaction);
+  $("ch-state").textContent = `${entries.length} watches written by ${scribe ? scribe.name : "the scribe"} · updated ${new Date(chronicle.generated * 1000).toLocaleTimeString()}`;
+  const box = $("ch-entries");
+  const open = new Set([...box.querySelectorAll("details[open]")].map(d => d.dataset.key));
+  const fresh = !box.children.length || box.dataset.faction !== chronicleFaction;
+  const when = ts => new Date(ts * 1000).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  box.dataset.faction = chronicleFaction;
+  box.replaceChildren(...entries.map((e, i) => {
+    const d = el("details");
+    d.dataset.key = `${e.faction}${e.start}`;
+    d.open = fresh ? i === 0 : open.has(d.dataset.key);
+    const s = el("summary", "", e.title);
+    s.append(el("span", "t", `${when(e.start)} to ${new Date(e.end * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`));
+    d.append(s, el("div", "by", `${e.scribe}${e.flag ? ` · judge flag kept for review: ${e.flag}` : ""}`));
+    for (const para of e.body.split(/\n\s*\n/)) if (para.trim()) d.append(el("p", "", para.trim()));
+    if (e.rumours.length) {
+      d.append(el("div", "feel-head", "Word going around"));
+      const far = new Map();
+      for (const r of e.rumours) {
+        if (r.distance === 0) {
+          const line = el("div", "rumour");
+          line.append(el("b", "", r.zone_name + ": "), document.createTextNode(`“${r.words}”`));
+          d.append(line);
+        } else {
+          far.set(r.words, [...(far.get(r.words) || []), r.zone_name]);
+        }
+      }
+      for (const [words, places] of far) {
+        const line = el("div", "rumour");
+        line.append(el("b", "", `Told further off (${places.join(", ")}): `), document.createTextNode(`“${words}”`));
+        d.append(line);
+      }
+    }
+    return d;
+  }));
+}
+
+async function refreshChronicle() {
+  try {
+    const res = await fetch("data/chronicle.json", { cache: "no-store" });
+    if (res.ok) {
+      const next = await res.json();
+      if (!chronicle || next.generated !== chronicle.generated) {
+        chronicle = next;
+        drawChronicle();
+      }
+    }
+  } catch {
+  } finally {
+    setTimeout(refreshChronicle, REGARD_MS);
+  }
+}
+
 async function refreshCompanies() {
   try {
     const res = await fetch("data/companies.json", { cache: "no-store" });
@@ -829,6 +905,10 @@ async function start() {
   refreshRegard();
   refreshLore();
   refreshCompanies();
+  for (const b of $("ch-tabs").children) {
+    b.addEventListener("click", () => { chronicleFaction = b.dataset.f; localSet("chronicle", chronicleFaction); drawChronicle(); });
+  }
+  refreshChronicle();
 }
 
 start();
