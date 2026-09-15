@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bot Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --ink: #1c1f24; --muted: #69707d; --line: #dde1e6;
+    --map: #e9ecef; --zone: #9aa3ae; --accent: #2f6fde; --ok: #1f9d6b; --bad: #d9363e;
+    --real: #d99a00; --active: #1f9d6b; --idle: #9aa0a8; --combat: #d9363e; --flight: #2f7fe0; --dead: #3a3d42; --paused: #8a4fd8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --panel: #1c1f24; --ink: #e6e8eb; --muted: #9aa1ab; --line: #2c3037;
+      --map: #0f1114; --zone: #4a525d; --accent: #6ea0ff; --ok: #3ecf8e; --bad: #ff5c63;
+      --real: #ffc53d; --active: #3ecf8e; --idle: #7c828c; --combat: #ff5c63; --flight: #5aa7ff; --dead: #c9ccd1; --paused: #b58cff;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #map { flex: 1; background: var(--map); }
+  aside { width: 360px; display: flex; flex-direction: column; border-left: 1px solid var(--line); background: var(--panel); }
+  header { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 15px; margin: 0 0 8px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .stat { background: var(--bg); border-radius: 6px; padding: 6px 8px; }
+  .stat b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 11px; }
+  .warn b { color: var(--combat); }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px; }
+  .tabs button { flex: 1; border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 6px; padding: 5px 4px; cursor: pointer; font: inherit; font-size: 12px; }
+  .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #search, .field { width: 100%; margin-top: 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 8px; color: var(--muted); font-size: 11px; }
+  .legend label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  #lists { flex: 1; overflow-y: auto; padding: 4px 0 12px; }
+  #lists h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 12px 14px 4px; }
+  .row { padding: 4px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+  .row:hover, .row.sel { background: var(--bg); }
+  .row small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #detail { border-top: 1px solid var(--line); padding: 10px 14px; max-height: 50%; overflow-y: auto; }
+  #detail:empty { display: none; }
+  #detail dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0; }
+  #detail dt { color: var(--muted); }
+  #detail dd { margin: 0; overflow-wrap: anywhere; }
+  .actions { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; padding: 5px 12px; cursor: pointer; font: inherit; }
+  .btn.quiet { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .result { font-size: 12px; margin-top: 6px; }
+  .result.ok { color: var(--ok); }
+  .result.bad { color: var(--bad); }
+  .status { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  details.commands { margin-top: 8px; font-size: 12px; }
+  details.commands summary { cursor: pointer; color: var(--muted); }
+  details.commands ol { list-style: none; margin: 6px 0 0; padding: 0; max-height: 140px; overflow-y: auto; }
+  details.commands li { padding: 2px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  details.commands li .t { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 6px; }
+  .feel { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+  .feel .who { cursor: pointer; }
+  .feel .who:hover { text-decoration: underline; }
+  .feel .w { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .warm { color: var(--ok); }
+  .cold { color: var(--bad); }
+  .feel-desc { color: var(--muted); font-size: 11px; margin: 0 0 4px 10px; }
+  .feel-head { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin: 10px 0 2px; }
+  .zone-label { background: transparent; border: 0; box-shadow: none; color: var(--muted); font-size: 11px; }
+  #map.art .zone-label { color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; }
+  .zone-label::before { display: none; }
+  #map:not(.labels) .zone-label { display: none; }
+  @media (max-width: 720px) {
+    body { flex-direction: column; }
+    #map { min-height: 55vh; }
+    aside { width: 100%; border-left: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<aside>
+  <header>
+    <h1>Bot Dashboard</h1>
+    <div class="stats">
+      <div class="stat"><b id="s-bots">–</b><span>bots online</span></div>
+      <div class="stat"><b id="s-active">–</b><span>active</span></div>
+      <div class="stat"><b id="s-paused">–</b><span>paused</span></div>
+      <div class="stat"><b id="s-real">–</b><span>real players</span></div>
+      <div class="stat" id="s-avg-box"><b id="s-avg">–</b><span>avg update ms</span></div>
+      <div class="stat"><b id="s-max">–</b><span>max update ms</span></div>
+      <div class="stat"><b id="s-last">–</b><span>last update ms</span></div>
+      <div class="stat"><b id="s-here">–</b><span>on this map</span></div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <input id="search" type="search" placeholder="Find by name…" autocomplete="off">
+    <div class="legend">
+      <span><i class="dot" style="background:var(--real)"></i>real player</span>
+      <span><i class="dot" style="background:var(--active)"></i>active bot</span>
+      <span><i class="dot" style="background:var(--idle)"></i>throttled</span>
+      <span><i class="dot" style="background:var(--paused)"></i>paused</span>
+      <span><i class="dot" style="background:var(--combat)"></i>combat</span>
+      <span><i class="dot" style="background:var(--flight)"></i>flying</span>
+      <span><i class="dot" style="background:var(--dead)"></i>dead</span>
+    </div>
+    <div class="legend">
+      <label><input type="checkbox" id="opt-art" checked> map art</label>
+      <label><input type="checkbox" id="opt-outlines"> zone outlines</label>
+    </div>
+    <details class="commands" id="commands">
+      <summary>Commands</summary>
+      <input class="field" id="token" type="password" placeholder="Command token (Dashboard.CommandToken)" autocomplete="off">
+      <div class="status" id="cmd-state"></div>
+      <ol id="cmd-log"></ol>
+    </details>
+    <details class="commands" id="feelings">
+      <summary>Feelings</summary>
+      <div class="status" id="feel-state">No regard data yet.</div>
+      <div class="feel-head">Recent moments</div>
+      <ol id="feel-recent"></ol>
+      <div class="feel-head">Warmest ties</div>
+      <ol id="feel-warm"></ol>
+      <div class="feel-head">Coldest ties</div>
+      <ol id="feel-cold"></ol>
+    </details>
+    <div class="status" id="status">Connecting…</div>
+  </header>
+  <div id="lists"></div>
+  <div id="detail"></div>
+</aside>
+<script>
+const CONTINENTS = [["0", "Eastern Kingdoms"], ["1", "Kalimdor"], ["530", "Outland"], ["571", "Northrend"]];
+const CLASSES = {1: "Warrior", 2: "Paladin", 3: "Hunter", 4: "Rogue", 5: "Priest", 6: "Death Knight", 7: "Shaman", 8: "Mage", 9: "Warlock", 11: "Druid"};
+const RACES = {1: "Human", 2: "Orc", 3: "Dwarf", 4: "Night Elf", 5: "Undead", 6: "Tauren", 7: "Gnome", 8: "Troll", 10: "Blood Elf", 11: "Draenei"};
+const RPG = ["Idle", "Going to grind", "Going to camp", "Wandering", "Visiting NPC", "Questing", "Taking flight", "Resting", "Outdoor PvP"];
+const REFRESH_MS = 2000;
+const ZONE_ART_ZOOM = -3.5;   // zone images replace the continent image's detail from here in
+
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const $ = id => document.getElementById(id);
+
+// WoW world axes: +x is north, +y is west. Leaflet lat grows north, lng east.
+const toLatLng = (x, y) => [x, -y];
+const areaBounds = a => L.latLngBounds(toLatLng(a.bottom, a.left), toLatLng(a.top, a.right));
+
+const map = L.map("map", { crs: L.CRS.Simple, minZoom: -6, maxZoom: 3, zoomSnap: 0.25, attributionControl: false });
+const artLayer = L.layerGroup().addTo(map);
+const zoneArtLayer = L.layerGroup().addTo(map);
+const zoneLayer = L.layerGroup().addTo(map);
+const markerLayer = L.layerGroup().addTo(map);
+
+let continent = localGet("continent") || "0";
+let worldmap = null;
+let mapArt = [];              // manifest.json entries, [] when no art is installed
+let players = [];
+let selected = null;
+let lastResult = null;        // { guid, ok, text }
+let busy = false;
+const markers = new Map();
+const zoneArt = new Map();    // manifest file -> L.imageOverlay
+let regard = null;            // data/regard.json from regard.py, null until it exists
+const REGARD_MS = 30000;
+
+function localGet(key) { try { return localStorage.getItem("dash." + key); } catch { return null; } }
+function localSet(key, value) { try { localStorage.setItem("dash." + key, value); } catch {} }
+
+function colorFor(p) {
+  if (!p.bot) return css("--real");
+  if (p.dead) return css("--dead");
+  if (p.combat) return css("--combat");
+  if (p.paused) return css("--paused");
+  if (p.flight) return css("--flight");
+  return p.active ? css("--active") : css("--idle");
+}
+
+function onContinent(p) { return !p.instance && String(p.map) === continent; }
+
+// ---- Map art -------------------------------------------------------------
+
+function continentArt() { return mapArt.filter(a => String(a.map) === continent && !a.zone); }
+function zoneArtEntries() {
+  // Big zones first so cities and small zones draw on top of their neighbours.
+  return mapArt.filter(a => String(a.map) === continent && a.zone)
+    .sort((a, b) => Math.abs((b.top - b.bottom) * (b.left - b.right)) - Math.abs((a.top - a.bottom) * (a.left - a.right)));
+}
+
+function drawArt() {
+  artLayer.clearLayers();
+  zoneArtLayer.clearLayers();
+  zoneArt.clear();
+  const on = $("opt-art").checked && mapArt.length > 0;
+  $("map").classList.toggle("art", on);
+  if (!on) return;
+  for (const a of continentArt())
+    L.imageOverlay("maps/" + a.file, areaBounds(a), { interactive: false }).addTo(artLayer);
+  updateZoneArt();
+}
+
+// Zone images are only loaded near the current view, and only when zoomed in.
+function updateZoneArt() {
+  if (!$("opt-art").checked || !mapArt.length) return;
+  const show = map.getZoom() >= ZONE_ART_ZOOM;
+  const view = map.getBounds().pad(0.25);
+  for (const a of zoneArtEntries()) {
+    const wanted = show && view.intersects(areaBounds(a));
+    const existing = zoneArt.get(a.file);
+    if (wanted && !existing) {
+      const overlay = L.imageOverlay("maps/" + a.file, areaBounds(a), { interactive: false });
+      zoneArt.set(a.file, overlay);
+      zoneArtLayer.addLayer(overlay);
+    } else if (!wanted && existing) {
+      zoneArtLayer.removeLayer(existing);
+      zoneArt.delete(a.file);
+    }
+  }
+  // Keep the stacking order: larger zones below smaller ones.
+  for (const a of zoneArtEntries()) zoneArt.get(a.file)?.bringToFront();
+}
+
+function drawZones() {
+  zoneLayer.clearLayers();
+  if (!worldmap) return;
+  const outlines = $("opt-outlines").checked || !mapArt.length || !$("opt-art").checked;
+  let bounds = null;
+  for (const z of worldmap.zones) {
+    if (String(z.map) !== continent) continue;
+    const b = areaBounds(z);
+    bounds = bounds ? bounds.extend(b) : b;
+    if (outlines) L.rectangle(b, { color: css("--zone"), weight: 1, fill: false, interactive: false }).addTo(zoneLayer);
+    L.marker(b.getCenter(), { opacity: 0, interactive: false, keyboard: false })
+      .bindTooltip(z.name, { permanent: true, direction: "center", className: "zone-label" })
+      .addTo(zoneLayer);
+  }
+  return bounds;
+}
+
+function updateLabelVisibility() {
+  $("map").classList.toggle("labels", map.getZoom() >= -3);
+}
+map.on("zoomend", updateLabelVisibility);
+map.on("moveend", updateZoneArt);
+
+// ---- Players -------------------------------------------------------------
+
+function describe(p) {
+  const bits = [`${p.level} ${RACES[p.race] || ""} ${CLASSES[p.class] || ""}`.trim()];
+  if (p.bot) bits.push(p.paused ? "paused" : p.active ? (RPG[p.rpg] || "active") : "throttled");
+  return bits.join(" · ");
+}
+
+function drawMarkers() {
+  const seen = new Set();
+  for (const p of players) {
+    if (!onContinent(p)) continue;
+    seen.add(p.guid);
+    const style = {
+      radius: p.bot ? (p.paused ? 6 : 5) : 8,
+      color: p.bot ? (p.paused ? "#fff" : colorFor(p)) : "#fff",
+      weight: p.bot ? (p.paused ? 2 : 1) : 2,
+      fillColor: colorFor(p), fillOpacity: 0.9
+    };
+    let m = markers.get(p.guid);
+    if (!m) {
+      m = L.circleMarker(toLatLng(p.x, p.y), style).addTo(markerLayer);
+      m.on("click", () => select(p.guid, false));
+      markers.set(p.guid, m);
+    } else {
+      m.setLatLng(toLatLng(p.x, p.y)).setStyle(style);
+    }
+    m.unbindTooltip().bindTooltip(`${p.name} — ${describe(p)}<br>${p.zone_name || ""}`);
+    if (!p.bot || p.paused || p.guid === selected) m.bringToFront();
+  }
+  for (const [guid, m] of markers) {
+    if (!seen.has(guid)) { markerLayer.removeLayer(m); markers.delete(guid); }
+  }
+  $("s-here").textContent = seen.size;
+}
+
+function row(p, sub) {
+  const div = document.createElement("div");
+  div.className = "row" + (p.guid === selected ? " sel" : "");
+  const name = document.createElement("span");
+  name.textContent = p.name;
+  name.style.color = p.bot ? (p.paused ? css("--paused") : "") : css("--real");
+  const small = document.createElement("small");
+  small.textContent = sub;
+  div.append(name, small);
+  div.onclick = () => select(p.guid, true);
+  return div;
+}
+
+function section(title, items) {
+  if (!items.length) return [];
+  const h = document.createElement("h2");
+  h.textContent = `${title} (${items.length})`;
+  return [h, ...items];
+}
+
+const where = p => p.instance ? p.map_name : p.zone_name;
+
+function drawLists() {
+  const q = $("search").value.trim().toLowerCase();
+  const nodes = [];
+  if (q) {
+    const hits = players.filter(p => p.name.toLowerCase().includes(q)).slice(0, 100);
+    nodes.push(...section("Matches", hits.map(p => row(p, where(p)))));
+  }
+  nodes.push(...section("Real players", players.filter(p => !p.bot).map(p => row(p, where(p)))));
+  nodes.push(...section("Paused bots", players.filter(p => p.paused).map(p => row(p, where(p)))));
+  const elsewhere = players.filter(p => p.instance || !CONTINENTS.some(([id]) => id === String(p.map)))
+    .sort((a, b) => a.map_name.localeCompare(b.map_name) || a.name.localeCompare(b.name));
+  nodes.push(...section("In instances / other maps", elsewhere.map(p => row(p, p.map_name))));
+  $("lists").replaceChildren(...nodes);
+}
+
+function drawDetail() {
+  const p = players.find(x => x.guid === selected);
+  const box = $("detail");
+  if (!p) { box.replaceChildren(); return; }
+  const leader = players.find(x => x.guid === p.group_leader);
+  const master = players.find(x => x.guid === p.master);
+  const fields = [
+    ["Character", describe(p)],
+    ["Where", p.instance ? p.map_name : `${p.zone_name} (${p.map_name})`],
+    ["State", [p.paused && "PAUSED", p.dead && "dead", p.combat && "in combat", p.flight && "flying", p.mounted && "mounted"].filter(Boolean).join(", ") || "—"],
+    ["Group", p.group_leader ? (leader ? `led by ${leader.name}` : `leader #${p.group_leader}`) : "—"],
+  ];
+  if (p.bot) {
+    fields.push(["Master", p.master ? (master ? master.name : `#${p.master}`) : "—"]);
+    if (p.paused) {
+      fields.push(["Paused since", new Date(p.paused_since * 1000).toLocaleTimeString()]);
+      fields.push(["Saved", (p.saved_strategies || []).join(", ") || "—"]);
+    }
+    fields.push(["Strategies", (p.strategies || []).join(", ") || "—"]);
+    fields.push(["Combat", (p.combat_strategies || []).join(", ") || "—"]);
+  }
+  fields.push(["GUID", p.guid]);
+  const title = document.createElement("strong");
+  title.textContent = p.name + (p.bot ? "" : " (real player)");
+  const dl = document.createElement("dl");
+  for (const [k, v] of fields) {
+    const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd"); dd.textContent = v;
+    dl.append(dt, dd);
+  }
+  const nodes = [title];
+  if (p.bot) {
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.textContent = p.paused ? "Resume" : "Pause";
+    btn.disabled = busy;
+    btn.onclick = () => sendCommand(p.paused ? "resume" : "pause", p);
+    actions.append(btn);
+    nodes.push(actions);
+    if (lastResult && lastResult.guid === p.guid) {
+      const r = document.createElement("div");
+      r.className = "result " + (lastResult.ok ? "ok" : "bad");
+      r.textContent = lastResult.text;
+      nodes.push(r);
+    }
+  }
+  nodes.push(dl);
+  nodes.push(...feelingsFor(p.guid));
+  box.replaceChildren(...nodes);
+}
+
+// ---- Feelings (regard.py) --------------------------------------------------
+
+const scoreClass = s => s >= 10 ? "warm" : s <= -10 ? "cold" : "";
+
+function goTo(guid) {
+  if (players.some(x => x.guid === guid)) select(guid, true);
+}
+
+// One tie: the other person's name (click to select if online), the feeling in words, the bot's own sentence.
+function feelRow(name, guid, tie) {
+  const wrap = document.createElement("div");
+  const line = document.createElement("div");
+  line.className = "feel";
+  const who = document.createElement("span");
+  who.className = "who " + scoreClass(tie.score);
+  who.textContent = name;
+  who.onclick = () => goTo(guid);
+  const w = document.createElement("span");
+  w.className = "w";
+  w.textContent = tie.words.replace(/^you /, "") + ` · ${tie.familiarity}`;
+  w.title = `score ${tie.score}, ${tie.familiarity} moments`;
+  line.append(who, w);
+  wrap.append(line);
+  if (tie.description) {
+    const d = document.createElement("div");
+    d.className = "feel-desc";
+    d.textContent = tie.description;
+    wrap.append(d);
+  }
+  return wrap;
+}
+
+function feelingsFor(guid) {
+  const person = regard && regard.people[String(guid)];
+  if (!person) return [];
+  const nodes = [];
+  if (person.feels.length) {
+    const h = document.createElement("div");
+    h.className = "feel-head";
+    h.textContent = "How they feel about others";
+    nodes.push(h, ...person.feels.map(t => feelRow(t.about_name, t.about, t)));
+  }
+  if (person.felt_by.length) {
+    const h = document.createElement("div");
+    h.className = "feel-head";
+    h.textContent = "How others feel about them";
+    nodes.push(h, ...person.felt_by.map(t => {
+      const row = feelRow(t.feeler_name, t.feeler, t);
+      row.querySelector(".w").textContent = t.words.replace(/^you /, "") + ` · ${t.familiarity}`;
+      return row;
+    }));
+  }
+  return nodes;
+}
+
+function drawFeelings() {
+  if (!regard) return;
+  $("feel-state").textContent = `${regard.pairs} ties, ${regard.moments_day} moments in the last day · updated ${new Date(regard.generated * 1000).toLocaleTimeString()}`;
+  const li = (children, cls) => {
+    const el = document.createElement("li");
+    if (cls) el.className = cls;
+    el.append(...children);
+    return el;
+  };
+  const link = (name, guid) => {
+    const a = document.createElement("span");
+    a.className = "who";
+    a.textContent = name;
+    a.onclick = () => goTo(guid);
+    return a;
+  };
+  $("feel-recent").replaceChildren(...regard.recent.slice(0, 25).map(r => {
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = new Date(r.ts * 1000).toLocaleTimeString();
+    const delta = document.createElement("span");
+    delta.className = scoreClass(r.delta * 10);
+    delta.textContent = ` ${r.delta > 0 ? "warmed to" : "cooled on"} `;
+    return li([t, link(r.feeler_name, r.feeler), delta, link(r.about_name, r.about), document.createTextNode(`: ${r.reason}`)]);
+  }));
+  const tie = t => li([link(t.feeler_name, t.feeler), document.createTextNode(` ${t.words.replace(/ them$/, "")} `),
+                       link(t.about_name, t.about)], scoreClass(t.score));
+  $("feel-warm").replaceChildren(...regard.warmest.filter(t => t.score > 0).slice(0, 10).map(tie));
+  $("feel-cold").replaceChildren(...regard.coldest.filter(t => t.score < 0).slice(0, 10).map(tie));
+}
+
+async function refreshRegard() {
+  try {
+    const res = await fetch("data/regard.json", { cache: "no-store" });
+    if (res.ok) {
+      regard = await res.json();
+      drawFeelings();
+      if (!busy) drawDetail();
+    }
+  } catch {
+  } finally {
+    setTimeout(refreshRegard, REGARD_MS);
+  }
+}
+
+function select(guid, pan) {
+  if (guid !== selected) lastResult = null;
+  selected = guid;
+  const p = players.find(x => x.guid === guid);
+  if (p && pan && !p.instance && CONTINENTS.some(([id]) => id === String(p.map))) {
+    if (String(p.map) !== continent) setContinent(String(p.map), false);
+    map.setView(toLatLng(p.x, p.y), Math.max(map.getZoom(), -1));
+  }
+  drawLists();
+  drawDetail();
+}
+
+function setContinent(id, fit = true) {
+  continent = id;
+  localSet("continent", id);
+  for (const b of $("tabs").children) b.classList.toggle("on", b.dataset.id === id);
+  markerLayer.clearLayers();
+  markers.clear();
+  const bounds = drawZones();
+  if (fit && bounds) map.fitBounds(bounds, { padding: [20, 20] });
+  drawArt();
+  updateLabelVisibility();
+  drawMarkers();
+}
+
+// ---- Commands ------------------------------------------------------------
+
+async function sendCommand(cmd, p) {
+  let token = $("token").value.trim();
+  if (!token) {
+    $("commands").open = true;
+    $("token").focus();
+    lastResult = { guid: p.guid, ok: false, text: "Enter the command token first (Commands, above)." };
+    drawDetail();
+    return;
+  }
+  busy = true;
+  drawDetail();
+  try {
+    const res = await fetch("cmd/" + cmd, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Dashboard-Token": token },
+      body: JSON.stringify({ guid: p.guid }),
+    });
+    const body = await res.json().catch(() => ({ ok: false, message: `HTTP ${res.status}` }));
+    lastResult = { guid: p.guid, ok: !!body.ok, text: body.message || `HTTP ${res.status}` };
+    if (res.status === 401) $("commands").open = true;
+  } catch (e) {
+    lastResult = { guid: p.guid, ok: false, text: `Could not reach the server: ${e.message}` };
+  } finally {
+    busy = false;
+    drawDetail();
+    refreshCommands();
+  }
+}
+
+async function refreshCommands() {
+  try {
+    const res = await fetch("commands", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    $("cmd-state").textContent = data.enabled ? "Commands enabled on the server." : "Commands are off on the server (no Dashboard.CommandToken).";
+    const items = data.recent.slice(0, 20).map(c => {
+      const li = document.createElement("li");
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = new Date(c.ts * 1000).toLocaleTimeString();
+      const who = players.find(x => x.guid === c.guid);
+      const label = c.cmd === "system" ? "" : `${c.cmd} ${who ? who.name : "#" + c.guid}: `;
+      li.append(t, document.createTextNode(label + c.message));
+      li.style.color = c.ok ? "" : css("--bad");
+      return li;
+    });
+    $("cmd-log").replaceChildren(...items);
+  } catch {}
+}
+
+// ---- Loop ----------------------------------------------------------------
+
+function drawStats(snap) {
+  $("s-bots").textContent = snap.counts.bots;
+  $("s-active").textContent = snap.counts.active;
+  $("s-paused").textContent = snap.counts.paused ?? 0;
+  $("s-real").textContent = snap.counts.real;
+  $("s-avg").textContent = snap.update_ms.avg;
+  $("s-max").textContent = snap.update_ms.max;
+  $("s-last").textContent = snap.update_ms.last;
+  $("s-avg-box").classList.toggle("warn", snap.update_ms.avg > 50);
+}
+
+async function refresh() {
+  try {
+    const res = await fetch("bots", { cache: "no-store" });
+    if (!res.ok) throw new Error(res.status === 503 ? "snapshot not ready" : `HTTP ${res.status}`);
+    const snap = await res.json();
+    players = snap.players;
+    drawStats(snap);
+    drawMarkers();
+    drawLists();
+    if (!busy) drawDetail();
+    if ($("commands").open) refreshCommands();
+    $("status").textContent = `Updated ${new Date(snap.ts * 1000).toLocaleTimeString()}` + (mapArt.length ? "" : " · no map art installed");
+  } catch (e) {
+    $("status").textContent = `Not updating: ${e.message}`;
+  } finally {
+    setTimeout(refresh, REFRESH_MS);
+  }
+}
+
+async function start() {
+  for (const [id, name] of CONTINENTS) {
+    const b = document.createElement("button");
+    b.textContent = name;
+    b.dataset.id = id;
+    b.onclick = () => setContinent(id);
+    $("tabs").append(b);
+  }
+  $("search").addEventListener("input", drawLists);
+  $("token").value = localGet("token") || "";
+  $("token").addEventListener("change", () => localSet("token", $("token").value.trim()));
+  $("commands").addEventListener("toggle", () => { if ($("commands").open) refreshCommands(); });
+  $("opt-art").checked = localGet("art") !== "0";
+  $("opt-outlines").checked = localGet("outlines") === "1";
+  $("opt-art").addEventListener("change", () => { localSet("art", $("opt-art").checked ? "1" : "0"); setContinent(continent, false); });
+  $("opt-outlines").addEventListener("change", () => { localSet("outlines", $("opt-outlines").checked ? "1" : "0"); setContinent(continent, false); });
+  try {
+    const res = await fetch("worldmap", { cache: "no-store" });
+    worldmap = await res.json();
+  } catch (e) {
+    $("status").textContent = `Could not load zone data: ${e.message}`;
+  }
+  try {
+    const res = await fetch("maps/manifest.json", { cache: "no-store" });
+    if (res.ok) mapArt = await res.json();
+  } catch {}
+  setContinent(continent);
+  refresh();
+  refreshRegard();
+}
+
+start();
+</script>
+</body>
+</html>

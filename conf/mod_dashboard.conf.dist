@@ -1,0 +1,56 @@
+[worldserver]
+
+########################################
+# mod-dashboard configuration
+########################################
+#
+# Bot dashboard: world-thread snapshot of online characters served over HTTP.
+# Reads (open): / (web page), /bots, /worldmap, /health, /commands, /maps/.
+# Writes (token): POST /cmd/pause, POST /cmd/resume with {"guid": N} and header
+# X-Dashboard-Token. Commands run on the world thread.
+# Never bind a public interface: localhost and the tailnet address only.
+
+# Dashboard.Enable
+#     Description: Start the HTTP server and build snapshots.
+#     Default:     1 (true)
+Dashboard.Enable = 1
+
+# Dashboard.Bind
+#     Description: Comma-separated addresses to listen on. Read at startup only.
+#                  Example: 127.0.0.1,192.168.1.50
+#     Default:     127.0.0.1
+Dashboard.Bind = 127.0.0.1
+
+# Dashboard.Port
+#     Description: TCP port. Read at startup only.
+#     Default:     8787
+Dashboard.Port = 8787
+
+# Dashboard.SnapshotIntervalMs
+#     Description: How often the world thread rebuilds the /bots snapshot.
+#     Default:     2000
+Dashboard.SnapshotIntervalMs = 2000
+
+# Dashboard.WebRoot
+#     Description: Directory served at /. Edits to the page need no restart.
+#     Default:     /opt/wow/azerothcore-wotlk/modules/mod-dashboard/web
+Dashboard.WebRoot = /opt/wow/azerothcore-wotlk/modules/mod-dashboard/web
+
+# Dashboard.CommandToken
+#     Description: Shared secret for POST /cmd/*, sent as the X-Dashboard-Token
+#                  header. Empty turns commands off. At least 16 characters.
+#                  Generate one with: openssl rand -hex 24
+#     Default:     "" (commands off)
+Dashboard.CommandToken = ""
+
+# Dashboard.PauseTeleportHoldSec
+#     Description: On pause, the random-bot teleport timer is pushed this far out
+#                  so the bot is not moved away. Resume reschedules it normally.
+#     Default:     86400
+Dashboard.PauseTeleportHoldSec = 86400
+
+# Dashboard.MapRoot
+#     Description: Directory of world map PNGs + manifest.json, served at /maps/.
+#                  Blizzard-derived: keep it outside any repository.
+#     Default:     /opt/wow/server/data/dashboard-maps
+Dashboard.MapRoot = /opt/wow/server/data/dashboard-maps
