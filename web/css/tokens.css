@@ -1,0 +1,126 @@
+/* Design tokens. Dark is the default theme; light applies only when chosen (data-theme="light"). */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, darkest to lightest */
+  --bg-0: #07090d;
+  --bg-1: #0c1017;
+  --bg-2: #111722;
+  --bg-3: #18202d;
+  --bg-4: #232d3d;
+  --glass: rgba(12, 16, 23, .8);
+  --glass-strong: rgba(16, 21, 30, .96);
+
+  /* Hairlines */
+  --line: rgba(160, 174, 192, .09);
+  --line-2: rgba(160, 174, 192, .16);
+  --line-3: rgba(160, 174, 192, .28);
+
+  /* Ink */
+  --ink: #e9edf4;
+  --ink-2: #aab3c2;
+  --ink-3: #6f7a8c;
+
+  /* Brand gold */
+  --gold: #d9a441;
+  --gold-hi: #f6d992;
+  --gold-text: #f0c872;
+  --gold-ink: #1b1306;
+  --gold-wash: rgba(232, 184, 90, .12);
+  --gold-line: rgba(232, 184, 90, .38);
+
+  /* Feeling and stance */
+  --warm: #3ecf8e;
+  --cold: #ff6b6b;
+  --warm-wash: rgba(62, 207, 142, .12);
+  --cold-wash: rgba(255, 107, 107, .12);
+  --warn: #fab219;
+
+  /* Factions */
+  --alliance: #5b93ff;
+  --horde: #f0555a;
+
+  /* Map and marker states */
+  --map: #05070a;
+  --zone: #3f4a5b;
+  --real: #ffc53d;
+  --active: #3ecf8e;
+  --idle: #6b7485;
+  --paused: #b48cff;
+  --combat: #ff5c63;
+  --flight: #5aa7ff;
+  --dead: #d4d7dd;
+  --dot-ring: #ffffff;
+  --dot-edge: rgba(0, 0, 0, .65);
+
+  /* Depth and shape */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, .5), 0 2px 8px rgba(0, 0, 0, .35);
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 14px;
+
+  /* Type */
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --font-prose: "Spectral", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, monospace;
+
+  /* Layout */
+  --top-h: 64px;
+  --rail-w: 68px;
+  --dock-full: 360px;
+  --insp-full: 400px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-0: #e8ecf1;
+  --bg-1: #f7f8fa;
+  --bg-2: #ffffff;
+  --bg-3: #eef1f5;
+  --bg-4: #dce2ea;
+  --glass: rgba(255, 255, 255, .84);
+  --glass-strong: rgba(255, 255, 255, .97);
+
+  --line: rgba(15, 23, 42, .08);
+  --line-2: rgba(15, 23, 42, .13);
+  --line-3: rgba(15, 23, 42, .22);
+
+  --ink: #111827;
+  --ink-2: #465061;
+  --ink-3: #6f7888;
+
+  --gold: #c9922e;
+  --gold-hi: #ecc16b;
+  --gold-text: #8f5c05;
+  --gold-ink: #1d1405;
+  --gold-wash: rgba(201, 146, 46, .13);
+  --gold-line: rgba(176, 124, 30, .45);
+
+  --warm: #0f8456;
+  --cold: #cf3038;
+  --warm-wash: rgba(15, 132, 86, .1);
+  --cold-wash: rgba(207, 48, 56, .09);
+  --warn: #b77900;
+
+  --alliance: #2563eb;
+  --horde: #c02a33;
+
+  --map: #d9dee5;
+  --zone: #97a1ad;
+  --real: #c98a00;
+  --active: #1f9d6b;
+  --idle: #8f98a3;
+  --paused: #8a4fd8;
+  --combat: #d9363e;
+  --flight: #2f7fe0;
+  --dead: #3a3d42;
+  --dot-ring: #ffffff;
+  --dot-edge: rgba(0, 0, 0, .4);
+
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, .08);
+  --shadow-2: 0 10px 30px rgba(15, 23, 42, .14), 0 2px 8px rgba(15, 23, 42, .08);
+}

@@ -1,0 +1,41 @@
+// Icon rail and the dock it controls. Returns one empty panel element per id for the panel components.
+import { state, on } from "../state.js";
+import { h, icon } from "../lib/dom.js";
+import { setPanel, setDock } from "../actions.js";
+
+export const PANELS = [
+  { id: "roster", icon: "users", label: "Roster", title: "Roster", desc: "Everyone in the world right now" },
+  { id: "feelings", icon: "heart", label: "Feelings", title: "Feelings", desc: "Who has warmed to or cooled on whom" },
+  { id: "companies", icon: "shield", label: "Companies", title: "Companies", desc: "Seats, lands, feuds and who is joining" },
+  { id: "chronicle", icon: "scroll", label: "Chronicle", title: "Chronicle", desc: "Each faction scribe's watches and the word going around" },
+  { id: "commands", icon: "terminal", label: "Commands", title: "Commands", desc: "Pause or resume a bot on the world server" },
+];
+
+export function mountRail(rail, dock) {
+  const buttons = new Map(PANELS.map(p => [p.id,
+    h("button.rail-btn", { type: "button", title: p.desc, on: { click: () => setPanel(p.id) } }, icon(p.icon, 20), h("span.lbl", p.label))]));
+  const collapse = h("button.icon-btn.collapse", { type: "button", on: { click: () => setDock(!state.dockOpen) } }, icon("panel", 18));
+  rail.replaceChildren(...buttons.values(), h("div.rail-spacer"), collapse);
+
+  const title = h("h1.dock-title");
+  const desc = h("div.dock-desc");
+  const panels = Object.fromEntries(PANELS.map(p => [p.id, h("section.panel", { dataset: { panel: p.id }, hidden: true })]));
+  dock.replaceChildren(h("div.dock-head", title, desc), h("div.dock-body", Object.values(panels)));
+
+  const sync = () => {
+    const current = PANELS.find(p => p.id === state.panel) || PANELS[0];
+    title.textContent = current.title;
+    desc.textContent = current.desc;
+    for (const [id, b] of buttons) {
+      const on = id === current.id && state.dockOpen;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    }
+    for (const [id, el] of Object.entries(panels)) el.hidden = id !== current.id;
+    collapse.title = state.dockOpen ? "Hide the side panel" : "Show the side panel";
+    document.getElementById("app").classList.toggle("dock-closed", !state.dockOpen);
+  };
+  on("panel", sync);
+  sync();
+  return panels;
+}
