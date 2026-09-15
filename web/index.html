@@ -655,6 +655,7 @@ function endedRow(e) {
 }
 
 const STAGE_WORDS = { noticed: "noticed", spoken_for: "spoken for", offered: "offered a place", joined: "sworn in" };
+const PENDING_WORDS = { invite: "be invited", promote: "be raised", demote: "be lowered", remove: "be cast out" };
 
 function candidacyRow(c) {
   const li = document.createElement("li");
@@ -665,7 +666,9 @@ function candidacyRow(c) {
   w.className = "w " + stanceClass(c.standing);
   const sponsor = c.sponsor_name ? ` · sponsor ${c.sponsor_name}` : "";
   const against = c.blackball_name ? ` · opposed by ${c.blackball_name}` : "";
-  w.textContent = `${STAGE_WORDS[c.stage] || c.stage}${sponsor}${against}`;
+  const rank = c.rank_name ? ` as ${c.rank_name}` : "";
+  const pending = c.pending ? ` · waiting to ${PENDING_WORDS[c.pending] || c.pending}` : "";   // plan 18 P4
+  w.textContent = `${STAGE_WORDS[c.stage] || c.stage}${rank}${sponsor}${against}${pending}`;
   w.title = `${c.vouchers} vouching · standing ${c.standing} · since ${new Date(c.since * 1000).toLocaleString()}`;
   li.append(who, companyLink(c.guildid), w);
   return li;
