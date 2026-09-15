@@ -134,6 +134,8 @@
       <div class="status" id="feel-state">No regard data yet.</div>
       <div class="feel-head">Recent moments</div>
       <ol id="feel-recent"></ol>
+      <div class="feel-head">Overheard</div>
+      <div class="chronicle" id="feel-talk"></div>
       <div class="feel-head">Warmest ties</div>
       <ol id="feel-warm"></ol>
       <div class="feel-head">Coldest ties</div>
@@ -530,6 +532,36 @@ function drawFeelings() {
                        link(t.about_name, t.about)], scoreClass(t.score));
   $("feel-warm").replaceChildren(...regard.warmest.filter(t => t.score > 0).slice(0, 10).map(tie));
   $("feel-cold").replaceChildren(...regard.coldest.filter(t => t.score < 0).slice(0, 10).map(tie));
+  // Plan 18 P8c: conversations bots had with no player about (nothing of it was said in the game).
+  const box = $("feel-talk");
+  const open = new Set([...box.querySelectorAll("details[open]")].map(d => d.dataset.key));
+  const talks = regard.talks || [];
+  box.replaceChildren(...(talks.length ? talks.map(t => {
+    const d = document.createElement("details");
+    d.dataset.key = `${t.ts}${t.a}${t.b}`;
+    d.open = open.has(d.dataset.key);
+    const s = document.createElement("summary");
+    s.textContent = `${t.a} and ${t.b}, ${t.place}`;
+    const when = document.createElement("span");
+    when.className = "t";
+    when.textContent = new Date(t.ts * 1000).toLocaleTimeString();
+    s.append(when);
+    d.append(s);
+    for (const [who, line] of t.exchange) {
+      const p = document.createElement("p");
+      const b = document.createElement("b");
+      b.textContent = `${who}: `;
+      p.append(b, document.createTextNode(line));
+      d.append(p);
+    }
+    if (t.moments.length) {
+      const m = document.createElement("div");
+      m.className = "by";
+      m.textContent = t.moments.map(x => `${x.target} ${x.feels > 0 ? "warmed to" : x.feels < 0 ? "cooled on" : "noted"} ${x.speaker}: ${x.why}`).join(" · ");
+      d.append(m);
+    }
+    return d;
+  }) : [Object.assign(document.createElement("div"), { className: "status", textContent: "No one has been overheard yet." })]));
 }
 
 async function refreshRegard() {
