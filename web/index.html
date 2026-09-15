@@ -68,6 +68,7 @@
   .warm { color: var(--ok); }
   .cold { color: var(--bad); }
   .feel-desc { color: var(--muted); font-size: 11px; margin: 0 0 4px 10px; }
+  .feel-desc.lore { color: var(--ink); font-size: 12px; margin-left: 0; }
   .feel-head { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin: 10px 0 2px; }
   .zone-label { background: transparent; border: 0; box-shadow: none; color: var(--muted); font-size: 11px; }
   #map.art .zone-label { color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; }
@@ -162,6 +163,7 @@ let busy = false;
 const markers = new Map();
 const zoneArt = new Map();    // manifest file -> L.imageOverlay
 let regard = null;            // data/regard.json from regard.py, null until it exists
+let lore = null;              // data/lore.json from gen_backstories.py project: who each character is
 const REGARD_MS = 30000;
 
 function localGet(key) { try { return localStorage.getItem("dash." + key); } catch { return null; } }
@@ -365,11 +367,51 @@ function drawDetail() {
     }
   }
   nodes.push(dl);
-  nodes.push(...feelingsFor(p.guid));
+  nodes.push(...loreFor(p.guid), ...feelingsFor(p.guid));
   box.replaceChildren(...nodes);
 }
 
 // ---- Feelings (regard.py) --------------------------------------------------
+
+// Personality, main motivation and story (plan 15), projected with the lore.
+function loreFor(guid) {
+  const l = lore && lore[String(guid)];
+  if (!l || !l.personality) return [];
+  const block = (title, text, cls) => {
+    const h = document.createElement("div");
+    h.className = "feel-head";
+    h.textContent = title;
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = text;
+    return [h, d];
+  };
+  const nodes = [...block("Who they are", l.personality, "feel-desc lore")];
+  if (l.motivation_short) {
+    nodes.push(...block("What drives them", l.motivation_short, "feel-desc lore"));
+    if (l.kind || l.target) {
+      const tag = document.createElement("div");
+      tag.className = "feel-desc";
+      tag.textContent = [l.kind, l.target].filter(Boolean).join(" · ");
+      nodes.push(tag);
+    }
+  }
+  if (l.gist) nodes.push(...block("Their story", l.gist, "feel-desc lore"));
+  return nodes;
+}
+
+async function refreshLore() {
+  try {
+    const res = await fetch("data/lore.json", { cache: "no-store" });
+    if (res.ok) {
+      lore = await res.json();
+      if (!busy) drawDetail();
+    }
+  } catch {
+  } finally {
+    setTimeout(refreshLore, 300000);
+  }
+}
 
 const scoreClass = s => s >= 10 ? "warm" : s <= -10 ? "cold" : "";
 
@@ -607,6 +649,7 @@ async function start() {
   setContinent(continent);
   refresh();
   refreshRegard();
+  refreshLore();
 }
 
 start();
