@@ -144,6 +144,8 @@
       <div class="status" id="co-state">No company data yet.</div>
       <div class="feel-head">Companies</div>
       <ol id="co-list"></ol>
+      <div class="feel-head">Candidacies</div>
+      <ol id="co-candidacy"></ol>
       <div class="feel-head">Recent incidents</div>
       <ol id="co-incidents"></ol>
     </details>
@@ -627,6 +629,26 @@ function drawCompanies() {
     return li;
   }));
   $("co-incidents").replaceChildren(...companies.incidents.slice(0, 25).map(i => incidentRow(i)));
+  // Candidacy (plan 18 P3): how far each company has come toward taking a real player in.
+  const cands = companies.candidacy || [];
+  $("co-candidacy").replaceChildren(...(cands.length ? cands.map(candidacyRow) : [Object.assign(document.createElement("li"), { textContent: "No company has taken notice of anyone yet." })]));
+}
+
+const STAGE_WORDS = { noticed: "noticed", spoken_for: "spoken for", offered: "offered a place", joined: "sworn in" };
+
+function candidacyRow(c) {
+  const li = document.createElement("li");
+  li.className = "feel";
+  const who = document.createElement("span");
+  who.textContent = `${c.player_name} → `;
+  const w = document.createElement("span");
+  w.className = "w " + stanceClass(c.standing);
+  const sponsor = c.sponsor_name ? ` · sponsor ${c.sponsor_name}` : "";
+  const against = c.blackball_name ? ` · opposed by ${c.blackball_name}` : "";
+  w.textContent = `${STAGE_WORDS[c.stage] || c.stage}${sponsor}${against}`;
+  w.title = `${c.vouchers} vouching · standing ${c.standing} · since ${new Date(c.since * 1000).toLocaleString()}`;
+  li.append(who, companyLink(c.guildid), w);
+  return li;
 }
 
 function incidentRow(i) {
