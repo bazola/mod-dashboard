@@ -11,6 +11,7 @@ import { mountCompanies } from "./components/companies.js";
 import { mountChronicle } from "./components/chronicle.js";
 import { mountMarket } from "./components/market.js";
 import { mountCommands } from "./components/commands.js";
+import { mountLore } from "./components/lore.js";
 import { mountInspector } from "./components/inspector.js";
 
 const $ = id => document.getElementById(id);
@@ -25,6 +26,7 @@ mountCompanies(panels.companies);
 mountChronicle(panels.chronicle);
 mountMarket(panels.market);
 mountCommands(panels.commands);
+mountLore(panels.lore);
 mountInspector($("inspector"));
 mountMap($("stage"));
 
