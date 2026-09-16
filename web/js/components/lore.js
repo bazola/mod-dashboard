@@ -44,6 +44,29 @@ function list(doc, redraw) {
   }, who(c), marks(c))));
 }
 
+// What stands now: the text that actually reaches this character's prompts. Read-only -- the box below is for
+// the player's own words, and the shaping is what the gate produces from them.
+function current(c) {
+  if (!c) return null;
+  const line = (label, value, cls) => value
+    ? h("div.lore-cur", { class: cls || "" }, h("h4", label), h("p", value))
+    : null;
+  const bits = [
+    line("Sheet", c.sheet),
+    c.bond ? line(`Bond to their main — ${c.bond_kind || "?"}`, c.bond) : null,
+    line("Personality", c.personality),
+    line("In short", c.gist),
+    line("What drives them", c.motivation_full || c.motivation),
+    line("Backstory", c.backstory),
+  ].filter(Boolean);
+  if (!bits.length) {
+    return empty(`Nothing written for ${c.name} yet. What you write below becomes their first.`);
+  }
+  return h("div.lore-current",
+    c.temperament ? h("div.lore-temper", h("span.pill", c.temperament), h("span.muted", " their turn of speech")) : null,
+    bits);
+}
+
 function verdict(r) {
   if (!r) return null;
   const bad = (r.refusals || []).length;
@@ -114,6 +137,7 @@ export function mountLore(el) {
       };
       return [
         sec("Your characters", list(doc, draw)),
+        char ? sec("What stands now", current(char)) : null,
         sec("What you say of them",
           char ? h("div.lore-edit", box, h("div.lore-actions", check, save)) : empty("Choose a character."),
           verdict(result)),
