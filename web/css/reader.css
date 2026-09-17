@@ -1,0 +1,136 @@
+/* Chronicle reader: the scribes' watches as a broadsheet, full screen over the dashboard. */
+
+.np-open { width: 100%; }
+
+.np-overlay {
+  --fc: var(--alliance);
+  --paper: #16130e;
+  --paper-2: #1f1a12;
+  --paper-ink: #ece4d3;
+  --paper-ink-2: #c2b79f;
+  --paper-ink-3: #8f846f;
+  --paper-rule: rgba(236, 228, 211, .14);
+  --paper-rule-2: rgba(236, 228, 211, .5);
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg-0);
+  animation: np-in .18s ease-out;
+}
+.np-overlay.horde { --fc: var(--horde); }
+.np-overlay:focus { outline: 0; }
+:root[data-theme="light"] .np-overlay {
+  --paper: #f6efdd;
+  --paper-2: #ece2ca;
+  --paper-ink: #221b10;
+  --paper-ink-2: #4d4333;
+  --paper-ink-3: #7b705c;
+  --paper-rule: rgba(34, 27, 16, .16);
+  --paper-rule-2: rgba(34, 27, 16, .62);
+}
+@keyframes np-in { from { opacity: 0; } }
+
+/* ---- Toolbar ---- */
+.np-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px clamp(12px, 3vw, 28px);
+  background: var(--glass-strong);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line-2);
+}
+.np-bar-title { display: flex; align-items: center; gap: 8px; margin-right: auto; font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: .08em; color: var(--gold-text); }
+.np-nav { display: flex; align-items: center; gap: 4px; }
+.np-days { width: auto; min-width: 11rem; height: 32px; padding: 0 10px; cursor: pointer; }
+.np-bar-end { display: flex; gap: 2px; }
+.np-bar .icon-btn:disabled { opacity: .35; cursor: default; background: transparent; border-color: transparent; color: var(--ink-3); }
+
+/* ---- The sheet ---- */
+.np-sheet {
+  max-width: 1240px;
+  margin: clamp(12px, 3vw, 32px) auto 64px;
+  padding: clamp(22px, 4.5vw, 60px) clamp(18px, 5vw, 68px) clamp(22px, 4vw, 44px);
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 1px solid var(--paper-rule);
+  border-radius: 3px;
+  box-shadow: var(--shadow-2);
+}
+.np-sheet > .empty { justify-content: center; padding: 48px 0; color: var(--paper-ink-3); }
+
+.np-mast { text-align: center; }
+.np-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .32em; text-transform: uppercase; color: var(--paper-ink-3); }
+.np-name { margin: 6px 0 10px; font-family: var(--font-display); font-size: clamp(30px, 6.4vw, 76px); font-weight: 700; line-height: 1.04; letter-spacing: .02em; color: var(--paper-ink); }
+.np-about { max-width: 46rem; margin: 0 auto 20px; font-family: var(--font-prose); font-size: 16px; font-style: italic; line-height: 1.5; color: var(--paper-ink-2); }
+.np-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 8px 2px 7px;
+  border-top: 4px double var(--paper-rule-2);
+  border-bottom: 1px solid var(--paper-rule-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--paper-ink-2);
+}
+.np-strip > :first-child { color: var(--fc); }
+
+/* ---- Articles ---- */
+.np-article { min-width: 0; }
+.np-kicker { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--fc); }
+.np-headline { margin: 4px 0 6px; font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: .02em; color: var(--paper-ink); }
+.np-by { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; font-family: var(--font-prose); font-size: 14.5px; font-style: italic; color: var(--paper-ink-3); }
+.np-by .badge { font-style: normal; }
+.np-body { font-family: var(--font-prose); font-size: 17.5px; line-height: 1.72; color: var(--paper-ink); }
+.np-body p { margin: 0 0 .85em; }
+.np-body p:first-child::first-letter { float: left; margin: .07em .1em 0 0; font-family: var(--font-display); font-size: 3.3em; line-height: .8; color: var(--gold-text); }
+
+/* The day's latest watch leads the page: headline across the top, text in columns, the word on the street beneath. */
+.np-article.lead { padding: 32px 0 36px; border-bottom: 1px solid var(--paper-rule-2); }
+.lead > .np-art-head { margin-bottom: 10px; text-align: center; }
+.lead .np-by { justify-content: center; }
+.lead .np-headline { margin: 6px 0 10px; font-size: clamp(30px, 4.4vw, 50px); }
+.lead > .np-body { columns: 3 17rem; column-gap: 40px; column-rule: 1px solid var(--paper-rule); font-size: 18.5px; }
+.lead > .np-word { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--paper-rule); columns: 3 17rem; column-gap: 40px; column-rule: 1px solid var(--paper-rule); }
+.lead .np-word h3 { column-span: all; }
+.lead .np-word .tale, .lead .np-word .tale + .tale { margin: 0; padding: 0 0 16px; border: 0; break-inside: avoid; }
+
+/* The rest of the day, oldest last, flowing down newspaper columns. */
+.np-rest { padding-top: 32px; columns: 2 24rem; column-gap: 48px; column-rule: 1px solid var(--paper-rule); }
+.np-rest > .np-article { break-inside: avoid; margin-bottom: 30px; padding-bottom: 26px; border-bottom: 1px solid var(--paper-rule); }
+.np-rest.one { columns: auto; }
+.np-rest.one > .np-article > .np-body { columns: 2 18rem; column-gap: 40px; column-rule: 1px solid var(--paper-rule); }
+.np-rest .np-word { margin-top: 14px; padding: 14px 16px 12px; background: var(--paper-2); border-left: 2px solid var(--gold); }
+
+/* ---- Word going around ---- */
+.np-word h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-ink-2); }
+.np-word h3::after { content: ""; flex: 1; height: 1px; background: var(--paper-rule); }
+.np-word * + h3 { margin-top: 22px; }
+.np-word .rumour { font-family: var(--font-prose); font-size: 15.5px; line-height: 1.55; color: var(--paper-ink-2); }
+.np-word .rumour b { font-family: var(--font-ui); font-size: 12px; font-style: normal; font-weight: 600; color: var(--paper-ink); }
+.np-word .rumour.hop1, .np-word .rumour.hop2, .np-word .rumour.hop3 { color: var(--paper-ink-3); }
+.np-word .rumour.hop1 b, .np-word .rumour.hop2 b, .np-word .rumour.hop3 b { color: var(--paper-ink-2); }
+.np-word .tale + .tale { margin-top: 12px; padding-top: 10px; border-top-color: var(--paper-rule); }
+
+/* ---- Turning the page ---- */
+.np-foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 4px; padding-top: 16px; border-top: 4px double var(--paper-rule-2); }
+.np-turn { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px; border: 0; border-radius: 6px; background: none; color: var(--paper-ink); text-align: left; transition: background .15s; }
+.np-turn.later { text-align: right; }
+.np-turn:hover { background: var(--paper-2); }
+.np-turn > span { font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: .03em; }
+.np-turn small { display: block; font-family: var(--font-ui); font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--paper-ink-3); }
+
+@media (max-width: 600px) {
+  .np-body, .lead > .np-body { font-size: 17px; }
+  .np-bar-title { display: none; }
+}

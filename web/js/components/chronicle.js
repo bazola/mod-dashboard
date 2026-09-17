@@ -1,12 +1,12 @@
 // Chronicle panel (chronicler.py, plan 19): each faction scribe's watches and the rumours going around.
-import { state, on, localSet } from "../state.js";
+import { state, on, emit, localSet } from "../state.js";
 import { h, icon, render } from "../lib/dom.js";
 import { clock, full } from "../lib/format.js";
 import { empty, openKeys } from "./common.js";
 
-const FACTIONS = [["A", "Alliance"], ["H", "Horde"]];
+export const FACTIONS = [["A", "Alliance"], ["H", "Horde"]];
 const HOPS = ["", "Carried on", "Further still", "Far and wide"];
-const when = ts => new Date(ts * 1000).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+export const when = ts => new Date(ts * 1000).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
 // A story is told where it happened, then retold at each stop along the road (chronicle_tale, round two).
 function story(tellings) {
@@ -15,7 +15,7 @@ function story(tellings) {
     `“${t.words}”`)));
 }
 
-function stories(tales, kind) {
+export function stories(tales, kind) {
   const byRoot = new Map();
   for (const t of tales) if (t.kind === kind) byRoot.set(t.root, [...(byRoot.get(t.root) || []), t]);
   return [...byRoot.values()].map(ts => story(ts.sort((a, b) => a.hop - b.hop)));
@@ -37,13 +37,22 @@ function entry(e, open) {
       heard.length > 0 && h("div.rumours.hearsay", h("h4", `Word of the ${enemy}`), heard)));
 }
 
+// Shared by the panel and the reader, so both follow the same scribe.
+export function setChronicleFaction(id) {
+  state.chronicleFaction = id;
+  localSet("chronicle", id);
+  emit("chronicle-faction");
+}
+
 export function mountChronicle(panel) {
+  const read = h("button.btn.btn-primary.np-open", { type: "button", title: "Read the chronicle full screen, laid out like a broadsheet", on: { click: () => emit("open-chronicle") } },
+    icon("book", 15), "Open Chronicle");
   const seg = h("div.seg.full", FACTIONS.map(([id, name]) =>
-    h("button", { type: "button", class: name.toLowerCase(), dataset: { f: id }, on: { click: () => { state.chronicleFaction = id; localSet("chronicle", id); draw(); } } }, name)));
+    h("button", { type: "button", class: name.toLowerCase(), dataset: { f: id }, on: { click: () => setChronicleFaction(id) } }, name)));
   const scribe = h("div");
   const meta = h("div.meta", icon("scroll", 13), "Waiting for the chronicle…");
   const entries = h("div");
-  panel.append(seg, scribe, meta, entries);
+  panel.append(read, seg, scribe, meta, entries);
 
   function draw() {
     const f = state.chronicleFaction;
@@ -64,6 +73,6 @@ export function mountChronicle(panel) {
       : empty("No watches written yet.", "scroll"));
   }
 
-  on("chronicle", draw);
+  on("chronicle chronicle-faction", draw);
   draw();
 }

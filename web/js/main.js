@@ -9,6 +9,7 @@ import { mountRoster } from "./components/roster.js";
 import { mountFeelings } from "./components/feelings.js";
 import { mountCompanies } from "./components/companies.js";
 import { mountChronicle } from "./components/chronicle.js";
+import { mountChronicleReader } from "./components/chronicle-reader.js";
 import { mountMarket } from "./components/market.js";
 import { mountCommands } from "./components/commands.js";
 import { mountLore } from "./components/lore.js";
@@ -28,6 +29,7 @@ mountMarket(panels.market);
 mountCommands(panels.commands);
 mountLore(panels.lore);
 mountInspector($("inspector"));
+mountChronicleReader(document.body);
 mountMap($("stage"));
 
 // "/" finds a character, Esc closes the inspector.

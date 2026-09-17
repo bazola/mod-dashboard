@@ -3,6 +3,7 @@
 //   regard, lore, companies, chronicle, commands   a data file changed
 //   selection, continent, panel, theme, busy, layers   UI state changed
 //   focus (player), focus-zone (zone id), mapcounts ({ total, counts, perMap }), focus-search
+//   chronicle-faction (the scribe being read), open-chronicle (show the full-screen reader)
 
 export function localGet(key) { try { return localStorage.getItem("dash." + key); } catch { return null; } }
 export function localSet(key, value) { try { localStorage.setItem("dash." + key, value); } catch {} }
