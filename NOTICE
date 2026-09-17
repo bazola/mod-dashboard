@@ -1,0 +1,30 @@
+mod-dashboard
+Copyright (c) 2026 Bazola
+Licensed under the MIT License; see LICENSE.
+
+Third-party material
+--------------------
+
+libmpq — GPL-2.0-or-later
+    tools/mpq_extract.c is our own code, but it includes <libmpq/mpq.h> and is
+    built against the libmpq static library that the AzerothCore build
+    produces. The resulting mpq_extract binary is therefore covered by
+    GPL-2.0-or-later. The source file in this repository stays MIT.
+
+Lucide — ISC
+    The icon shapes in web/js/lib/icons.js are hand-written SVG path data drawn
+    in the style of Lucide. No Lucide code or file is copied, included or
+    distributed here.
+
+Loaded at runtime from third-party CDNs, never vendored in this repository:
+
+    Leaflet 1.9.4 — BSD-2-Clause
+    Cinzel, Inter and Spectral (Google Fonts) — SIL Open Font License 1.1
+
+The combined server binary
+--------------------------
+
+AzerothCore links its modules statically. When this module is built into the
+worldserver alongside AGPL-3.0 modules, the combined binary is AGPL-3.0, and
+anyone who runs that server for other people must offer them its source. The
+files in this repository keep their MIT terms.
