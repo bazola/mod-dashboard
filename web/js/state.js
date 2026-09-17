@@ -3,7 +3,7 @@
 //   regard, lore, companies, chronicle, commands   a data file changed
 //   selection, continent, panel, theme, busy, layers   UI state changed
 //   focus (player), focus-zone (zone id), mapcounts ({ total, counts, perMap }), focus-search
-//   chronicle-faction (the scribe being read), open-chronicle (show the full-screen reader)
+//   chronicle-faction (the scribe being read), open-chronicle ({ mine } shows the full-screen reader, mine: the player's own)
 
 export function localGet(key) { try { return localStorage.getItem("dash." + key); } catch { return null; } }
 export function localSet(key, value) { try { localStorage.setItem("dash." + key, value); } catch {} }
@@ -31,6 +31,7 @@ export const state = {
   dockOpen: localGet("dock") !== "0",
   inspectorTab: localGet("itab") || "story",
   chronicleFaction: localGet("chronicle") || "A",
+  chronicleHouse: localGet("house") || "",   // whose own chronicle: a main guid from chronicle.json households
   rosterView: localGet("roster") || "notable",
   query: "",
   token: localGet("token") || "",

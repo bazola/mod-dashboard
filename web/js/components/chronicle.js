@@ -45,8 +45,11 @@ export function setChronicleFaction(id) {
 }
 
 export function mountChronicle(panel) {
-  const read = h("button.btn.btn-primary.np-open", { type: "button", title: "Read the chronicle full screen, laid out like a broadsheet", on: { click: () => emit("open-chronicle") } },
-    icon("book", 15), "Open Chronicle");
+  const read = h("div.np-open",
+    h("button.btn.btn-primary", { type: "button", title: "Read the chronicle full screen, laid out like a broadsheet", on: { click: () => emit("open-chronicle") } },
+      icon("book", 15), "Open Chronicle"),
+    h("button.btn", { type: "button", title: "Only what your main and alts took part in, written up watch by watch", on: { click: () => emit("open-chronicle", { mine: true }) } },
+      icon("feather", 15), "Your Chronicle"));
   const seg = h("div.seg.full", FACTIONS.map(([id, name]) =>
     h("button", { type: "button", class: name.toLowerCase(), dataset: { f: id }, on: { click: () => setChronicleFaction(id) } }, name)));
   const scribe = h("div");

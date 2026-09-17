@@ -1,6 +1,7 @@
 /* Chronicle reader: the scribes' watches as a broadsheet, full screen over the dashboard. */
 
-.np-open { width: 100%; }
+.np-open { display: flex; gap: 6px; }
+.np-open > .btn { flex: 1; }
 
 .np-overlay {
   --fc: var(--alliance);
@@ -20,6 +21,7 @@
   animation: np-in .18s ease-out;
 }
 .np-overlay.horde { --fc: var(--horde); }
+.np-overlay.mine { --fc: var(--gold-text); }
 .np-overlay:focus { outline: 0; }
 :root[data-theme="light"] .np-overlay {
   --paper: #f6efdd;
@@ -49,6 +51,7 @@
 .np-bar-title { display: flex; align-items: center; gap: 8px; margin-right: auto; font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: .08em; color: var(--gold-text); }
 .np-nav { display: flex; align-items: center; gap: 4px; }
 .np-days { width: auto; min-width: 11rem; height: 32px; padding: 0 10px; cursor: pointer; }
+.np-house { min-width: 8rem; }
 .np-bar-end { display: flex; gap: 2px; }
 .np-bar .icon-btn:disabled { opacity: .35; cursor: default; background: transparent; border-color: transparent; color: var(--ink-3); }
 
