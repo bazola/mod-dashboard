@@ -162,9 +162,14 @@ function jobView() {
       h("p", job.bond)) : null,
     job.story ? h("div.lore-cur", h("h4", `Their story — ${(job.temperament || "").toLowerCase().replace(/_/g, " ")}`
       + `${job.drawn_temperament ? ", drawn" : ""}`), h("p", job.story)) : null,
-    (job.refusals || []).length
-      ? h("div.lore-advice", h("h4", "What the world would not hold"),
+    // Only when it actually came to nothing. A discarded attempt is not a refusal if the next one stood, and
+    // showing it as one told the player their writing had been rejected when it had just been reworded.
+    job.state === "failed" && (job.refusals || []).length
+      ? h("div.lore-bad", h("h4", "What the world would not hold"),
           h("ul", job.refusals.map(x => h("li", x))))
+      : null,
+    job.state === "failed" && (job.notes || []).length
+      ? h("div.lore-advice", h("h4", "What it tried"), h("ul", job.notes.map(x => h("li", x))))
       : null,
     job.message ? h("div.lore-msg", job.message) : null);
 }
@@ -217,7 +222,9 @@ function bringIn(char, redraw) {
         redraw();
       },
     },
-  }, "Keep them");
+  // Not "Keep them": the older editor below has a "Keep it", and two buttons a few inches apart whose names
+  // differ by a pronoun sent the operator to the greyed-out one.
+  }, "Bring them in");
 
   return h("div.lore-bring",
     options.catchup ? h("div.lore-warn", icon("alert", 15), h("span", options.catchup)) : null,
