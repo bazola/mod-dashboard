@@ -32,13 +32,19 @@ let form = { kind: "", temperament: "", concept: "", keep: "", keep_story: "", r
 
 const headers = () => ({ "Content-Type": "application/json", "X-Lore-Token": readToken() });
 
+// The token is kept in this browser, against this exact web address. Reaching the dashboard by another name -
+// localhost here, the tailnet address from the game PC - is a different store, and the box comes up empty.
+let tokenBad = false;
+
 async function ask(path, body) {
   const res = await fetch(GATE + path, { method: "POST", headers: headers(), body: JSON.stringify(body) });
+  tokenBad = res.status === 401;
   return res.json();
 }
 
 async function get(path) {
   const res = await fetch(GATE + path, { headers: { "X-Lore-Token": readToken() }, cache: "no-store" });
+  tokenBad = res.status === 401;
   return res.json();
 }
 
@@ -280,7 +286,7 @@ export function mountLore(el) {
     // read, so keying the redraw on it rebuilt the panel - and the box - for no change at all.
     const stamp = (doc?.characters || []).map(c =>
       `${c.guid}:${c.bond_kind || ""}:${c.has_sheet ? 1 : 0}${c.has_story ? 1 : 0}${c.has_traits ? 1 : 0}`).join("|");
-    const sig = JSON.stringify([stamp, chosen, result, busy, claim.length,
+    const sig = JSON.stringify([stamp, chosen, result, busy, claim.length, tokenBad,
       options?.character, options?.has_bond, form.kind, form.temperament, form.rebond,
       job?.id, job?.state, (job?.steps || []).length, !!job?.story]);
     render(el, sig, () => {
@@ -289,7 +295,12 @@ export function mountLore(el) {
       const token = h("input.input", {
         type: "password", placeholder: "Lore gate token", autocomplete: "off",
         spellcheck: "false", value: readToken(),
-        on: { change: e => { saveToken(e.target.value.trim()); refresh(draw); } },
+        on: {
+          // Kept as it is typed. On blur alone, a token pasted and then sent straight off with the button
+          // was never saved at all.
+          input: e => saveToken(e.target.value.trim()),
+          change: e => { saveToken(e.target.value.trim()); refresh(draw); },
+        },
       });
 
       const char = (doc.characters || []).find(c => c.name === chosen);
@@ -362,6 +373,12 @@ export function mountLore(el) {
           char ? h("div.lore-edit", box, h("div.lore-actions", check, save)) : empty("Choose a character."),
           verdict(result)),
         sec("The gate",
+          tokenBad
+            ? h("div.lore-warn", icon("alert", 15), h("span",
+                "The gate would not take that token. It is kept in this browser against this exact web address, "
+                + "so reaching the dashboard by another name — localhost here, the tailnet address from the game "
+                + "PC — needs it entered again below."))
+            : null,
           h("div.lore-rules",
             h("ul", [
               "Write as though it is real life. No games, no figures.",
