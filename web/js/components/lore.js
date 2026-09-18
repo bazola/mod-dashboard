@@ -25,6 +25,9 @@ let claim = [];         // characters whose account has named no main yet
 let options = null;     // /alt-options for the chosen alt
 let job = null;         // the writing that is running, or the one just finished
 let poll = 0;
+// What the player has typed, kept per character. The box is rebuilt on every redraw, and a redraw happens
+// whenever the gate is read again or an answer comes back - so without this, their words vanish mid-sentence.
+let drafts = {};
 let form = { kind: "", temperament: "", concept: "", keep: "", keep_story: "", rebond: false };
 
 const headers = () => ({ "Content-Type": "application/json", "X-Lore-Token": readToken() });
@@ -273,7 +276,11 @@ function verdict(r) {
 export function mountLore(el) {
   const draw = () => {
     const doc = live || state.loreEdit;
-    const sig = JSON.stringify([doc?.generated, chosen, result, busy, claim.length,
+    // What the page actually shows, not when it was fetched: `generated` is a fresh timestamp on every live
+    // read, so keying the redraw on it rebuilt the panel - and the box - for no change at all.
+    const stamp = (doc?.characters || []).map(c =>
+      `${c.guid}:${c.bond_kind || ""}:${c.has_sheet ? 1 : 0}${c.has_story ? 1 : 0}${c.has_traits ? 1 : 0}`).join("|");
+    const sig = JSON.stringify([stamp, chosen, result, busy, claim.length,
       options?.character, options?.has_bond, form.kind, form.temperament, form.rebond,
       job?.id, job?.state, (job?.steps || []).length, !!job?.story]);
     render(el, sig, () => {
@@ -294,7 +301,9 @@ export function mountLore(el) {
           ? `Write ${char.name} in your own words: where they come from, what they are like, what they are after.`
           : "Choose a character first.",
       });
-      if (existing) box.value = existing;
+      const key = char ? char.name : "";
+      box.value = drafts[key] !== undefined ? drafts[key] : (existing || "");
+      box.addEventListener("input", () => { drafts[key] = box.value; });
 
       const run = async (path) => {
         if (busy || !char) return;
