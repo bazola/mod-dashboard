@@ -232,6 +232,38 @@
 }
 .lore-cur p { margin: 0; line-height: 1.6; font-family: Spectral, Georgia, serif; color: var(--ink-2); }
 
+/* Bringing an alt in: the choices a player makes before anything is written (plan 21 §3-§4). */
+.lore-bring { display: flex; flex-direction: column; gap: 12px; }
+.lore-claim { display: flex; flex-direction: column; gap: 8px; }
+.lore-claim p { line-height: 1.5; color: var(--ink-2); }
+.lore-choice { display: flex; flex-direction: column; gap: 6px; }
+.lore-choice h4 {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.lore-choice p { line-height: 1.5; }
+.lore-kinds { display: flex; flex-direction: column; gap: 4px; }
+.lore-kind {
+  display: flex; align-items: baseline; gap: 7px; width: 100%; padding: 6px 9px; text-align: left;
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 7px; color: inherit; cursor: pointer;
+}
+.lore-kind:hover { background: var(--bg-3); border-color: var(--line-3); }
+.lore-kind.on { border-color: var(--gold-line); box-shadow: 0 0 0 2px var(--gold-wash); }
+.lore-kind b { text-transform: capitalize; }
+.lore-kind .muted { font-size: 11.5px; line-height: 1.4; }
+.lore-anchors { display: flex; gap: 6px; flex-wrap: wrap; }
+.lore-anchors .input { flex: 1 1 140px; min-width: 0; }
+.lore-warn {
+  display: flex; align-items: flex-start; gap: 8px; padding: 9px 11px; border-radius: 7px;
+  background: var(--bg-2); border-left: 3px solid var(--gold); line-height: 1.5;
+}
+.lore-job { display: flex; flex-direction: column; gap: 9px; }
+.lore-steps { display: flex; flex-direction: column; gap: 3px; }
+.lore-step { display: flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.lore-step.working { color: var(--ink-2); }
+.lore-step.working .ico { animation: lore-pulse 1.4s ease-in-out infinite; }
+@keyframes lore-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.lore-job.failed .lore-msg { border-left: 3px solid #c0262f; }
+
 .seat { padding: 10px 6px; }
 .seat + .seat { box-shadow: inset 0 1px 0 var(--line); }
 .seat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
