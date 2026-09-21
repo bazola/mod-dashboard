@@ -357,6 +357,10 @@ button.tag:hover { border-color: var(--line-3); color: var(--ink); }
 .sect-end { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--ink-3); }
 .sect-count { font-size: 11px; font-weight: 600; letter-spacing: 0; padding: 1px 7px; border-radius: 999px; background: var(--bg-3); font-variant-numeric: tabular-nums; }
 .sect-count:empty { display: none; }
+/* Opens the same list full screen; kept quiet until the header is hovered. */
+.sect-expand { width: 24px; height: 24px; border-radius: 6px; opacity: 0; }
+.sect-head:hover .sect-expand, .sect-expand:focus-visible { opacity: 1; }
+@media (hover: none) { .sect-expand { opacity: 1; } }
 .sect-end .ico svg { transition: transform .2s; }
 .sect[open] .sect-end .ico svg { transform: rotate(180deg); }
 .sect-body { padding: 4px 6px 6px; border-top: 1px solid var(--line); }

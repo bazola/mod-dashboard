@@ -52,6 +52,18 @@ export function loadTies(guid) {
   getJSON(`data/ties/${guid}.json`).then(land, () => land(held?.doc || { feels: [], felt_by: [] }));
 }
 
+// The whole of one of the Feelings panel's lists -- every moment, every conversation overheard, every
+// tie ranked warmest to coldest. Megabytes each, so they are fetched only when a full-screen view asks
+// for one, and re-fetched when regard.py has written a newer set.
+export function loadArchive(name, force = false) {
+  const stamp = state.regard?.generated;
+  const held = state.archive.get(name);
+  if (held && held.stamp === stamp && !force) return;
+  state.archive.set(name, { stamp, doc: held?.doc || null, at: held?.at || 0, failed: false });
+  const land = (doc, failed) => { state.archive.set(name, { stamp, doc, at: Date.now(), failed }); emit("archive", name); };
+  getJSON(`data/${name}.json`).then(doc => land(doc, false), () => land(held?.doc || null, true));
+}
+
 export function startPolling() {
   loop(async () => {
     try {

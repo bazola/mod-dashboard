@@ -6,11 +6,15 @@ import { STATE_LABEL, stateOf, scoreClass, companyColor, companyName } from "../
 import { goTo, selectCompany } from "../actions.js";
 
 // A collapsible card with a header and a count. Its open state survives reloads when given a key.
-export function section(title, { icon: ic, key, open = true, flat = false } = {}) {
+// `expand` puts a button in the header for opening the same thing full screen; it must not toggle
+// the card, hence stopping the click before the <summary> under it ever sees it.
+export function section(title, { icon: ic, key, open = true, flat = false, expand, expandTitle = "Show all" } = {}) {
   const count = h("span.sect-count");
   const body = h("div.sect-body");
+  const button = expand && h("button.icon-btn.sect-expand", { type: "button", title: expandTitle,
+    on: { click: e => { e.preventDefault(); e.stopPropagation(); expand(); } } }, icon("expand", 13));
   const el = h("details.sect", { class: flat ? "flat" : "", open },
-    h("summary.sect-head", ic && icon(ic, 14), h("span", title), h("span.sect-end", count, icon("chevron", 14))),
+    h("summary.sect-head", ic && icon(ic, 14), h("span", title), h("span.sect-end", count, button, icon("chevron", 14))),
     body);
   if (key) {
     const saved = localGet("sect." + key);
