@@ -46,10 +46,15 @@
 .fx-scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: scroll;         /* always, not auto: the bar must not appear and shift the list mid-read */
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: clamp(10px, 2vw, 22px) clamp(12px, 3vw, 28px) 64px;
 }
+/* These are the longest surfaces in the dashboard; give them a bar that is plainly there. */
+.fx-scroll { scrollbar-width: auto; }
+.fx-scroll::-webkit-scrollbar { width: 14px; }
+.fx-scroll::-webkit-scrollbar-thumb { border-width: 3px; }
 .fx-list {
   max-width: 860px;
   margin: 0 auto;

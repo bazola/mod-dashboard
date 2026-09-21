@@ -17,6 +17,12 @@
   --line-2: rgba(160, 174, 192, .16);
   --line-3: rgba(160, 174, 192, .28);
 
+  /* Scrollbars. Solid, not a hairline over the page: a thumb of --bg-4 on --bg-0 is four pixels
+     of #232d3d on #07090d, which is a scrollbar nobody can see. */
+  --scroll-track: #0d121b;
+  --scroll-thumb: #3a4659;
+  --scroll-thumb-hi: #5b6c88;
+
   /* Ink */
   --ink: #e9edf4;
   --ink-2: #aab3c2;
@@ -95,6 +101,10 @@
   --bg-4: #dce2ea;
   --glass: rgba(255, 255, 255, .84);
   --glass-strong: rgba(255, 255, 255, .97);
+
+  --scroll-track: #dfe4ec;
+  --scroll-thumb: #aeb9c9;
+  --scroll-thumb-hi: #8b98ab;
 
   --line: rgba(15, 23, 42, .08);
   --line-2: rgba(15, 23, 42, .13);
