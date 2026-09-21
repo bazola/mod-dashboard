@@ -7,6 +7,8 @@ import { mountRail } from "./components/rail.js";
 import { mountMap } from "./components/mapview.js";
 import { mountRoster } from "./components/roster.js";
 import { mountFeelings } from "./components/feelings.js";
+import { mountGroups } from "./components/groups.js";
+import { mountGroupsGrid } from "./components/groups-grid.js";
 import { mountCompanies } from "./components/companies.js";
 import { mountChronicle } from "./components/chronicle.js";
 import { mountChronicleReader } from "./components/chronicle-reader.js";
@@ -23,6 +25,7 @@ mountTopbar($("topbar"));
 const panels = mountRail($("rail"), $("dock"));
 mountRoster(panels.roster);
 mountFeelings(panels.feelings);
+mountGroups(panels.groups);
 mountCompanies(panels.companies);
 mountChronicle(panels.chronicle);
 mountMarket(panels.market);
@@ -30,6 +33,7 @@ mountCommands(panels.commands);
 mountLore(panels.lore);
 mountInspector($("inspector"));
 mountChronicleReader(document.body);
+mountGroupsGrid(document.body);
 mountMap($("stage"));
 
 // "/" finds a character, Esc closes the inspector.

@@ -72,4 +72,5 @@ export function startPolling() {
   watch("data/lore.json", "lore", LORE_MS);
   watch("data/lore-edit.json", "loreEdit", DATA_MS);
   watch("data/market.json", "market", MARKET_MS);
+  watch("data/chat.json", "chat", DATA_MS);
 }

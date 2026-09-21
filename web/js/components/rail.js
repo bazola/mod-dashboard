@@ -6,6 +6,7 @@ import { setPanel, setDock } from "../actions.js";
 export const PANELS = [
   { id: "roster", icon: "users", label: "Roster", title: "Roster", desc: "Everyone in the world right now" },
   { id: "feelings", icon: "heart", label: "Feelings", title: "Feelings", desc: "Who has warmed to or cooled on whom" },
+  { id: "groups", icon: "handshake", label: "Groups", title: "Companies of bots", desc: "Who is standing together right now, and what they are saying" },
   { id: "companies", icon: "shield", label: "Companies", title: "Companies", desc: "Seats, lands, feuds and who is joining" },
   { id: "chronicle", icon: "scroll", label: "Chronicle", title: "Chronicle", desc: "Each faction scribe's watches and the word going around" },
   { id: "market", icon: "coins", label: "Market", title: "Market", desc: "The auction houses: stalls, sales and what goods fetch" },

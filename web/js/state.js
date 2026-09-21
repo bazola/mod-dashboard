@@ -4,6 +4,7 @@
 //   selection, continent, panel, theme, busy, layers   UI state changed
 //   focus (player), focus-zone (zone id), mapcounts ({ total, counts, perMap }), focus-search
 //   chronicle-faction (the scribe being read), open-chronicle ({ mine } shows the full-screen reader, mine: the player's own)
+//   open-groups ({ key } shows the wall of bot companies, key: one company's own map and talk)
 
 export function localGet(key) { try { return localStorage.getItem("dash." + key); } catch { return null; } }
 export function localSet(key, value) { try { localStorage.setItem("dash." + key, value); } catch {} }
@@ -20,6 +21,7 @@ export const state = {
   companies: null,        // data/companies.json from regard.py (plan 14)
   chronicle: null,        // data/chronicle.json from chronicler.py (plan 19)
   market: null,           // data/market.json from market.py (plan 17 §3.E)
+  chat: null,             // data/chat.json from regard.py: the party lines, for the Groups panel
   commands: null,         // GET /commands
   history: { bots: [], avg: [] },
   conn: { ok: false, ts: 0, text: "Connecting…" },
