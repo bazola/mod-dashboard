@@ -85,4 +85,33 @@ export function placeOf(g) {
   return names.join(" · ");
 }
 
+// The talk in two halves: what was said before this company existed, and what it has said itself. A card
+// that runs them together reads as one strange conversation -- Pibuxall's 13 lines were said to a real
+// player a week ago and to a different companion this morning, none of them to the Alicey he now stands
+// with, who has never spoken at all.
+export function linesSplit(g) {
+  const all = linesFor(g);
+  const since = g.since / 1000;
+  return { all, before: all.filter(l => l.ts < since), after: all.filter(l => l.ts >= since) };
+}
+
+export const saidBy = (g, p) => linesFor(g).filter(l => l.guid === p.guid).length;
+
 export const together = g => new Set(g.members.map(p => where(p) || "")).size === 1;
+
+// `OllamaChat.SayDistance` (30.0 in the live conf) is the distance BotOnlyCompanyTogether measures: a
+// company strung out behind its leader is not "together" and will not talk, whatever the roster says.
+// That is the usual reason a company sits silent, so it is worth showing rather than leaving a mystery.
+export const SAY_DISTANCE = 30;
+
+export function spread(g) {
+  let far = 0;
+  for (const a of g.members) {
+    for (const b of g.members) {
+      if (a !== b) far = Math.max(far, Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z));
+    }
+  }
+  return far;
+}
+
+export const tooFar = g => spread(g) > SAY_DISTANCE;

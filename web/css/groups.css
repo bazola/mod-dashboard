@@ -98,7 +98,16 @@
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--ink-3);
+  text-align: center;
 }
+
+/* Lines said in other companies: shown, because they are this bot's history, but plainly not this
+   company's talk -- and a company that has said nothing of its own says so. */
+.bubble.past { opacity: .5; }
+.bubble.past b { font-style: italic; }
+.gr-note { align-self: center; margin: 5px 0 2px; font-size: 11.5px; font-style: italic; color: var(--ink-3); text-align: center; }
+.gr-said { flex: none; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.gr-said.none { color: var(--ink-3); font-style: italic; }
 
 /* ---- One company, on the map ---- */
 .gr-modal {

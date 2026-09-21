@@ -6,7 +6,8 @@ import { h, icon, render, esc } from "../lib/dom.js";
 import { stamp, full, plural, CLASSES, CLASS_COLORS } from "../lib/format.js";
 import { where, factionOf, describe } from "../lib/world.js";
 import { avatar, empty, factionBadge } from "./common.js";
-import { groupsNow, markSeen, ageWords, ageKey, linesFor, placeOf, together } from "../lib/groups.js";
+import { groupsNow, markSeen, ageWords, ageKey, linesFor, linesSplit, saidBy, placeOf, together,
+         spread, SAY_DISTANCE } from "../lib/groups.js";
 import { select } from "../actions.js";
 
 const HASH = "#groups";
@@ -21,43 +22,58 @@ const names = g => g.members.map(p => p.name).join(" & ");
 
 // ---- Talk ----
 
-function bubble(g, l) {
+function bubble(g, l, past) {
   const side = l.guid === g.members[0].guid ? "a" : "b";
-  return h("div.bubble", { class: side },
+  return h("div.bubble", { class: past ? `${side} past` : side },
     h("b", `${l.name} · ${stamp(l.ts)}`), l.text);
 }
 
-// Oldest first, with a rule where this company's own talk begins: the lines above it were said in an
-// earlier company, because chat.json is keyed by speaker and knows nothing of groups.
-function chatBody(g, lines) {
-  const out = [];
-  const since = g.since / 1000;
-  let marked = false;
-  for (const l of lines) {
-    if (!marked && l.ts >= since) {
-      marked = true;
-      if (out.length) out.push(h("div.gr-since", "since they joined up"));
-    }
-    out.push(bubble(g, l));
+// Oldest first, in two labelled halves. chat.json is keyed by speaker and knows nothing of groups, so the
+// earlier half was said in other companies -- to other companions, or to a real player -- and is always
+// named and dimmed as such. When a company has said nothing of its own, say so outright: silence read as
+// a one-sided conversation is exactly how this first went wrong.
+function chatBody(g, before, after) {
+  if (!before.length && !after.length) {
+    return empty(g.members.length === 2 ? "Neither of them has ever spoken." : "None of them has ever spoken.", "message");
   }
-  return out.length ? out : empty("They have not spoken yet.", "message");
+  const out = [];
+  if (before.length) {
+    out.push(h("div.gr-since", `earlier · ${plural(before.length, "line")} said in other companies`));
+    out.push(before.map(l => bubble(g, l, true)));
+  }
+  if (after.length) {
+    if (before.length) out.push(h("div.gr-since", "since they joined up"));
+    out.push(after.map(l => bubble(g, l)));
+  } else {
+    out.push(h("div.gr-note", "Nothing said since they joined up."));
+  }
+  return out;
 }
 
 const toBottom = el => { el.scrollTop = el.scrollHeight; };
 
 // ---- A card ----
 
-function member(p, leader) {
+// A member who has never said anything is worth naming as silent: an empty column looks like a bug.
+function member(p, leader, said) {
   return h("div.gr-member",
     avatar(p),
     h("span.gr-who", { class: p.guid === leader ? "lead" : "" }, p.name),
     h("span.muted", `${p.level} ${CLASSES[p.class] || ""}`),
+    h("span.gr-said", { class: said ? "" : "none" }, said ? plural(said, "line") : "silent"),
     h("span.gr-mzone", where(p) || "—"));
 }
 
+// How far apart they stand, when that is the reason they are not talking.
+function farBadge(g) {
+  const yd = Math.round(spread(g));
+  if (yd <= SAY_DISTANCE) return null;
+  return h("span.badge.warn", { title: `OllamaChat.SayDistance is ${SAY_DISTANCE} yd: past it a company is not "together" and will not talk` }, `${yd} yd apart`);
+}
+
 function card(g, onOpen) {
-  const lines = linesFor(g);
-  const chat = h("div.gr-chat", chatBody(g, lines.slice(-CARD_LINES)));
+  const { all, before, after } = linesSplit(g);
+  const chat = h("div.gr-chat", chatBody(g, before.slice(-CARD_LINES), after.slice(-CARD_LINES)));
   const el = h("div.gr-card", { role: "button", tabindex: "0",
     title: "Open this company on the map",
     on: { click: () => onOpen(g.key), keydown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(g.key); } } } },
@@ -67,9 +83,11 @@ function card(g, onOpen) {
         h("div.gr-card-sub", `${plural(g.members.length, "bot")} · levels ${g.members.map(p => p.level).join(", ")}`)),
       h("div.gr-stat",
         h("span.gr-age", { title: `Standing together since ${full(g.since / 1000)}, as first seen by the dashboard` }, ageWords(g.since)),
-        h("span.muted", lines.length ? plural(lines.length, "line") : "no talk"))),
-    h("div.gr-where", icon(together(g) ? "pin" : "swords", 13), placeOf(g), !together(g) && h("span.badge.warn", "apart")),
-    h("div.gr-members", g.members.map(p => member(p, g.leader))),
+        h("span.muted", after.length ? plural(after.length, "line")
+          : all.length ? `${all.length} earlier` : "no talk"))),
+    h("div.gr-where", icon(together(g) ? "pin" : "swords", 13), placeOf(g),
+      !together(g) ? h("span.badge.warn", "apart") : farBadge(g)),
+    h("div.gr-members", g.members.map(p => member(p, g.leader, saidBy(g, p)))),
     chat);
   queueMicrotask(() => toBottom(chat));
   return el;
@@ -199,16 +217,20 @@ export function mountGroupsGrid(root) {
   function drawModal() {
     const g = openKey && find(openKey);
     if (!g) { if (!modal.hidden) closeOne(); return; }
-    const lines = linesFor(g);
+    const { all, before, after } = linesSplit(g);
+    const yd = Math.round(spread(g));
     sheetTitle.textContent = names(g);
     sheetSub.textContent = `${plural(g.members.length, "bot")} · together ${ageWords(g.since)} · ${placeOf(g)}`;
-    render(sheetTags, `${g.key}|${lines.length}|${together(g)}`, () => [
+    render(sheetTags, `${g.key}|${all.length}|${after.length}|${together(g)}|${yd > SAY_DISTANCE}`, () => [
       factionBadge(factionOf(g.members[0])),
-      g.members.map(p => h("span.badge", { title: describe(p) }, `${p.name} ${p.level} ${CLASSES[p.class] || ""}`)),
+      g.members.map(p => h("span.badge", { title: describe(p) },
+        `${p.name} ${p.level} ${CLASSES[p.class] || ""} · ${saidBy(g, p) ? plural(saidBy(g, p), "line") : "silent"}`)),
       !together(g) && h("span.badge.warn", "standing apart"),
-      h("span.badge", lines.length ? plural(lines.length, "line") : "no talk"),
+      farBadge(g),
+      h("span.badge", after.length ? plural(after.length, "line")
+        : all.length ? `${all.length} earlier, none here` : "no talk"),
     ]);
-    render(modalChat, `${g.key}|${lines.length}|${state.chat?.generated}`, () => chatBody(g, lines));
+    render(modalChat, `${g.key}|${all.length}|${state.chat?.generated}`, () => chatBody(g, before, after));
     toBottom(modalChat);
     drawMap(g);
   }
@@ -219,7 +241,9 @@ export function mountGroupsGrid(root) {
     count.replaceChildren(icon("users", 13), gs.length
       ? `${plural(gs.length, "company", "companies")} · ${plural(bots, "bot")} standing together`
       : "Nobody is grouped right now");
-    const sig = gs.map(g => `${g.key}:${ageKey(g.since)}:${placeOf(g)}:${linesFor(g).length}`).join("|")
+    // The distance badge turns on and off while they stand in the same zone, so the threshold belongs in
+    // the signature: placeOf alone would leave it stale.
+    const sig = gs.map(g => `${g.key}:${ageKey(g.since)}:${placeOf(g)}:${linesFor(g).length}:${spread(g) > SAY_DISTANCE}`).join("|")
       + `|${state.chat?.generated}`;
     render(grid, sig, () => gs.length ? gs.map(g => card(g, showOne))
       : empty(state.players.length ? "No bots are standing together right now. Companies form a few minutes after a restart."
