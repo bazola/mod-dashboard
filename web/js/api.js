@@ -39,6 +39,19 @@ export async function refreshCommands() {
   } catch {}
 }
 
+// A person's whole standing lives in a file of its own, fetched when their Ties tab is opened:
+// a well-travelled bot has upwards of 150 ties, far too many to carry in regard.json. The cache
+// entry is stamped with the regard.json it was fetched beside, so a new cycle refetches it; the
+// ties already on screen stay there while it does, and `at` tells the inspector to redraw.
+export function loadTies(guid) {
+  const stamp = state.regard?.generated;
+  const held = state.ties.get(guid);
+  if (held && held.stamp === stamp) return;
+  state.ties.set(guid, { stamp, doc: held?.doc || null, at: held?.at || 0 });
+  const land = doc => { state.ties.set(guid, { stamp, doc, at: Date.now() }); emit("ties", guid); };
+  getJSON(`data/ties/${guid}.json`).then(land, () => land(held?.doc || { feels: [], felt_by: [] }));
+}
+
 export function startPolling() {
   loop(async () => {
     try {

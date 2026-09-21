@@ -21,6 +21,11 @@
   color: var(--ink-3);
 }
 .sub-head::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.sub-head .sect-count { letter-spacing: 0; text-transform: none; }
+/* The fold of passing acquaintances, sitting between the warm ties and the cold ones. */
+.tie-fold { margin: 8px 0; background: transparent; }
+.tie-fold > .sect-head { padding: 9px 10px; }
+.tie-fold > .sect-body { padding: 0 4px 4px; }
 
 /* ---- Overheard conversations ---- */
 .talk-names { font-weight: 600; color: var(--ink); }

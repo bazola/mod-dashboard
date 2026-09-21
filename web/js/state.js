@@ -1,6 +1,7 @@
 // App state and a tiny publish/subscribe bus. Components read `state` and subscribe to topics:
 //   snapshot  /bots arrived               conn       connection status changed
 //   regard, lore, companies, chronicle, commands   a data file changed
+//   ties (guid)    one person's tie file arrived
 //   selection, continent, panel, theme, busy, layers   UI state changed
 //   focus (player), focus-zone (zone id), mapcounts ({ total, counts, perMap }), focus-search
 //   chronicle-faction (the scribe being read), open-chronicle ({ mine } shows the full-screen reader, mine: the player's own)
@@ -22,6 +23,7 @@ export const state = {
   chronicle: null,        // data/chronicle.json from chronicler.py (plan 19)
   market: null,           // data/market.json from market.py (plan 17 §3.E)
   chat: null,             // data/chat.json from regard.py: the party lines, for the Groups panel
+  ties: new Map(),        // guid -> { stamp, doc }: one person's whole standing, fetched on demand
   commands: null,         // GET /commands
   history: { bots: [], avg: [] },
   conn: { ok: false, ts: 0, text: "Connecting…" },

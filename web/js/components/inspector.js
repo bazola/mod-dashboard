@@ -4,6 +4,7 @@ import { h, icon, render } from "../lib/dom.js";
 import { CLASS_COLORS, clockS, signed, plural, capital } from "../lib/format.js";
 import { activity, factionOf, raceClass, scoreClass, onAnyContinent, companyColor } from "../lib/world.js";
 import { select, clearSelection, sendCommand } from "../actions.js";
+import { loadTies } from "../api.js";
 import { avatar, who, companyLink, factionBadge, statePill, empty, kpis, dmeter, section } from "./common.js";
 import { incident } from "./companies.js";
 
@@ -54,12 +55,41 @@ function tieRow(name, guid, t) {
     t.description && h("div.tie-desc", t.description));
 }
 
+// The world's own line, from RegardWords(): below it, "you feel little either way about them".
+const FELT = 10;
+
+// Every tie, strongest warmth first down to strongest coldness. The great middle of passing
+// acquaintances -- a bot may have a hundred of them -- folds away where it belongs, between the two.
+function tieList(list, nameOf, key) {
+  const sorted = [...list].sort((a, b) => b.score - a.score);
+  const felt = sorted.filter(t => Math.abs(t.score) >= FELT);
+  const passing = sorted.filter(t => Math.abs(t.score) < FELT);
+  const row = t => tieRow(...nameOf(t), t);
+  const cold = felt.findIndex(t => t.score < 0);
+  const cut = cold < 0 ? felt.length : cold;
+  let fold = null;
+  if (passing.length > 0) {
+    fold = section("Passing acquaintances", { icon: "users", key: `ties.${key}`, open: false });
+    fold.count(passing.length);
+    fold.body.append(...passing.map(row));
+    fold.el.classList.add("tie-fold");
+  }
+  return [felt.slice(0, cut).map(row), fold && fold.el, felt.slice(cut).map(row)];
+}
+
 function ties(guid) {
-  const person = state.regard?.people[String(guid)];
-  if (!person || (!person.feels.length && !person.felt_by.length)) return empty("No feelings recorded for them yet.", "heart");
+  const held = state.ties.get(guid);
+  if (!held || !held.doc) return empty("Reading their ties…", "heart");
+  const { feels, felt_by } = held.doc;
+  if (!feels.length && !felt_by.length) return empty("No feelings recorded for them yet.", "heart");
+  const all = feels.concat(felt_by);
+  const warm = all.filter(t => t.score >= FELT).length, cold = all.filter(t => t.score <= -FELT).length;
   return h("div",
-    person.feels.length > 0 && [h("div.sub-head", "How they feel about others"), person.feels.map(t => tieRow(t.about_name, t.about, t))],
-    person.felt_by.length > 0 && [h("div.sub-head", "How others feel about them"), person.felt_by.map(t => tieRow(t.feeler_name, t.feeler, t))]);
+    kpis([["ties", all.length], ["warm", warm, warm ? "warm" : ""], ["cold", cold, cold ? "cold" : ""]]),
+    feels.length > 0 && [h("div.sub-head", "How they feel about others", h("span.sect-count", feels.length)),
+      tieList(feels, t => [t.about_name, t.about], "feels")],
+    felt_by.length > 0 && [h("div.sub-head", "How others feel about them", h("span.sect-count", felt_by.length)),
+      tieList(felt_by, t => [t.feeler_name, t.feeler], "felt")]);
 }
 
 function details(p) {
@@ -85,7 +115,7 @@ function details(p) {
 
 function characterView(p) {
   const person = state.regard?.people[String(p.guid)];
-  const tieCount = person ? person.feels.length + person.felt_by.length : 0;
+  const tieCount = person ? person.n_feels + person.n_felt_by : 0;
   const tab = state.inspectorTab;
   const pick = id => { state.inspectorTab = id; localSet("itab", id); emit("selection"); };
   return [
@@ -100,7 +130,8 @@ function characterSig(p) {
   const leader = state.byGuid.get(p.group_leader)?.name, master = state.byGuid.get(p.master)?.name;
   return ["c", p.guid, p.name, p.level, p.zone_name, p.map_name, p.instance, p.active, p.rpg, p.paused, p.dead, p.combat, p.flight, p.mounted,
     p.group_leader, leader, p.master, master, p.paused_since, (p.strategies || []).join(), (p.combat_strategies || []).join(), (p.saved_strategies || []).join(),
-    state.busy, lr, state.inspectorTab, state.regard?.generated, !!state.lore].join("|");
+    state.busy, lr, state.inspectorTab, state.regard?.generated, !!state.lore,
+    state.ties.get(p.guid)?.at].join("|");
 }
 
 function goneView(guid) {
@@ -178,6 +209,7 @@ export function mountInspector(aside) {
     const key = state.selected != null ? `c${state.selected}` : `g${gid}`;
     if (key !== shownKey) { shownKey = key; inner.scrollTop = 0; }
     if (state.selected != null) {
+      if (state.inspectorTab === "ties") loadTies(state.selected);
       const p = state.byGuid.get(state.selected);
       if (!p) render(inner, `gone|${state.selected}|${state.regard?.generated}`, () => goneView(state.selected));
       else render(inner, characterSig(p), () => characterView(p));
@@ -186,6 +218,6 @@ export function mountInspector(aside) {
     }
   }
 
-  on("selection snapshot busy lore regard companies theme", draw);
+  on("selection snapshot busy lore regard ties companies theme", draw);
 }
 
