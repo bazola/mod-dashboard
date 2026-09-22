@@ -68,7 +68,7 @@ function member(p, leader, said) {
 function farBadge(g) {
   const yd = Math.round(spread(g));
   if (yd <= SAY_DISTANCE) return null;
-  return h("span.badge.warn", { title: `OllamaChat.SayDistance is ${SAY_DISTANCE} yd: past it a company is not "together" and will not talk` }, `${yd} yd apart`);
+  return h("span.badge.warn", { title: `The widest gap between any two members. Party chat has no range, so this does not stop them talking -- it is how to tell a company travelling together from one strung out across a zone` }, `${yd} yd apart`);
 }
 
 function card(g, onOpen) {

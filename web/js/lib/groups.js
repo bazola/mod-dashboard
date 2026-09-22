@@ -99,9 +99,11 @@ export const saidBy = (g, p) => linesFor(g).filter(l => l.guid === p.guid).lengt
 
 export const together = g => new Set(g.members.map(p => where(p) || "")).size === 1;
 
-// `OllamaChat.SayDistance` (30.0 in the live conf) is the distance BotOnlyCompanyTogether measures: a
-// company strung out behind its leader is not "together" and will not talk, whatever the roster says.
-// That is the usual reason a company sits silent, so it is worth showing rather than leaving a mystery.
+// `OllamaChat.SayDistance` (30.0 in the live conf) is the distance that gates SAY and YELL. It used to gate
+// bot-only party talk as well, which is why a spread-out company sat silent -- plans/36 removed that test,
+// because party chat is rangeless in 3.3.5. The threshold is kept here only as the point past which a
+// company is worth flagging as strung out rather than travelling together: a real signal for the director
+// work in plans/22 and 29, and no longer a reason a company will not speak.
 export const SAY_DISTANCE = 30;
 
 export function spread(g) {
