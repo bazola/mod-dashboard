@@ -3,6 +3,8 @@
 //   regard, lore, companies, chronicle, commands, memories   a data file changed
 //   ties (guid)    one person's tie file arrived        archive (name)  a whole-list file arrived
 //   botmemories (guid)  one bot's memory file arrived   open-memories   shows every memory, full screen
+//   journeys   the index of who has a journey changed   journey (guid)  one character's record arrived
+//   open-journey ({ guid }) shows one character's whole record, full screen
 //   open-feelings ({ view }) shows one of the Feelings lists whole, full screen
 //   selection, continent, panel, theme, busy, layers   UI state changed
 //   focus (player), focus-zone (zone id), mapcounts ({ total, counts, perMap }), focus-search
@@ -28,6 +30,8 @@ export const state = {
   memories: null,         // data/memories.json from regard.py: what the bots still carry (plan 38)
   ties: new Map(),        // guid -> { stamp, doc }: one person's whole standing, fetched on demand
   botMemories: new Map(), // guid -> { stamp, doc }: everything one bot carries, fetched on demand
+  journeys: null,         // data/journeys.json from regard.py: who has a journey, and every place named
+  journey: new Map(),     // guid -> { stamp, doc }: one character's whole record, fetched on demand
   archive: new Map(),     // "moments" | "talks" | "ranked" -> { stamp, doc }: the whole of a list, on demand
   commands: null,         // GET /commands
   history: { bots: [], avg: [] },

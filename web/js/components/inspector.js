@@ -33,7 +33,9 @@ function hero(p) {
     h("div.hero-actions",
       p.bot && h("button.btn", { type: "button", class: p.paused ? "btn-go" : "btn-primary", disabled: state.busy, on: { click: () => sendCommand(p.paused ? "resume" : "pause", p) } },
         icon(p.paused ? "play" : "pause", 14), state.busy ? "Working…" : p.paused ? "Resume" : "Pause"),
-      onAnyContinent(p) && h("button.btn", { type: "button", on: { click: () => select(p.guid, true) } }, icon("locate", 14), "Show on map")),
+      onAnyContinent(p) && h("button.btn", { type: "button", on: { click: () => select(p.guid, true) } }, icon("locate", 14), "Show on map"),
+      h("button.btn", { type: "button", title: "Everything they have done, in the order it happened",
+        on: { click: () => emit("open-journey", { guid: p.guid }) } }, icon("route", 14), "Journey")),
     r && h("div.alert", { class: r.ok ? "ok" : "bad" }, icon(r.ok ? "check" : "alert", 14), h("span", r.text)));
 }
 
@@ -155,7 +157,10 @@ function characterSig(p) {
 function goneView(guid) {
   const name = state.regard?.people[String(guid)]?.name || `Character #${guid}`;
   return [
-    h("div.hero", closeBtn(), h("div.hero-top", h("span.avatar.lg", "?"), h("div.hero-id", h("h2.hero-name", name), h("div.hero-sub", "Not in the world right now")))),
+    h("div.hero", closeBtn(), h("div.hero-top", h("span.avatar.lg", "?"), h("div.hero-id", h("h2.hero-name", name), h("div.hero-sub", "Not in the world right now"))),
+      // Their record outlives their being online, and is the one thing still worth reading here.
+      h("div.hero-actions",
+        h("button.btn", { type: "button", on: { click: () => emit("open-journey", { guid }) } }, icon("route", 14), "Journey"))),
     h("div.tab-body", empty("They have left the world. They will show here again when they return.", "info")),
   ];
 }

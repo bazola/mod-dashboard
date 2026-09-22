@@ -18,6 +18,8 @@ import { mountCommands } from "./components/commands.js";
 import { mountLore } from "./components/lore.js";
 import { mountMemories } from "./components/memories.js";
 import { mountMemoriesFull } from "./components/memories-full.js";
+import { mountJourney } from "./components/journey.js";
+import { mountJourneyFull } from "./components/journey-full.js";
 import { mountInspector } from "./components/inspector.js";
 
 const $ = id => document.getElementById(id);
@@ -35,11 +37,13 @@ mountMarket(panels.market);
 mountCommands(panels.commands);
 mountLore(panels.lore);
 mountMemories(panels.memories);
+mountJourney(panels.journey);
 mountInspector($("inspector"));
 mountChronicleReader(document.body);
 mountFeelingsFull(document.body);
 mountGroupsGrid(document.body);
 mountMemoriesFull(document.body);
+mountJourneyFull(document.body);
 mountMap($("stage"));
 
 // "/" finds a character, Esc closes the inspector.

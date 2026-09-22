@@ -146,7 +146,12 @@
     padding: 6px 8px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+    /* Ten panels no longer fit across a phone; let the rail scroll rather than clip the last of them. */
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail-btn { flex: none; }
   .rail-spacer, .rail .collapse { display: none; }
   .dock, .app.dock-closed .dock { display: flex; border-right: 0; overflow: visible; }
   .dock > * { width: auto; }

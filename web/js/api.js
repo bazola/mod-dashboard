@@ -5,6 +5,7 @@ const REFRESH_MS = 2000;
 const DATA_MS = 30000;
 const LORE_MS = 300000;
 const MARKET_MS = 60000;   // market.py rewrites its file every 10 minutes
+const JOURNEY_MS = 60000;  // the journeys are rebuilt on the same ten-minute cadence
 const HISTORY = 90;   // samples kept for the top-bar sparklines (3 minutes at 2 s)
 
 async function getJSON(url) {
@@ -64,6 +65,18 @@ export function loadMemories(guid) {
   getJSON(`data/memories/${guid}.json`).then(land, () => land(held?.doc || { memories: [] }));
 }
 
+// One character's whole record, fetched when their journey is opened (plans/42). Same shape as the
+// ties and memories above and for the same reason: the index beside it is a light list of who has one,
+// and a well-travelled character's own record runs to a thousand entries and 300 KB.
+export function loadJourney(guid) {
+  const stamp = state.journeys?.generated;
+  const held = state.journey.get(guid);
+  if (held && held.stamp === stamp && held.doc) return;
+  state.journey.set(guid, { stamp, doc: held?.doc || null, at: held?.at || 0, failed: false });
+  const land = (doc, failed) => { state.journey.set(guid, { stamp, doc, at: Date.now(), failed }); emit("journey", guid); };
+  getJSON(`data/journeys/${guid}.json`).then(doc => land(doc, false), () => land(held?.doc || null, true));
+}
+
 // The whole of one of the Feelings panel's lists -- every moment, every conversation overheard, every
 // tie ranked warmest to coldest. Megabytes each, so they are fetched only when a full-screen view asks
 // for one, and re-fetched when regard.py has written a newer set.
@@ -111,4 +124,5 @@ export function startPolling() {
   watch("data/market.json", "market", MARKET_MS);
   watch("data/chat.json", "chat", DATA_MS);
   watch("data/memories.json", "memories", DATA_MS);
+  watch("data/journeys.json", "journeys", JOURNEY_MS);
 }
