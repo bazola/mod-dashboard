@@ -226,6 +226,22 @@ function bringIn(char, redraw) {
   // differ by a pronoun sent the operator to the greyed-out one.
   }, "Bring them in");
 
+  // Filling in your own alts is the point, not a toll. This only saves the blank page: it puts the draw the
+  // gate would have made anyway on screen first, in fields that are still yours to change.
+  const surprise = h("button.btn", {
+    type: "button", disabled: running || !options.suggest,
+    title: "Draw a tie, a turn of speech, and a few words to start from",
+    on: {
+      click: () => {
+        const s = options.suggest || {};
+        form.kind = s.kind || "";
+        form.temperament = s.temperament || "";
+        form.concept = s.concept || "";
+        redraw();
+      },
+    },
+  }, "Surprise me");
+
   return h("div.lore-bring",
     options.catchup ? h("div.lore-warn", icon("alert", 15), h("span", options.catchup)) : null,
     !options.has_sheet
@@ -233,6 +249,8 @@ function bringIn(char, redraw) {
           h("span", `${options.main} has no sheet yet. Write one for them first — every tie is written `
                   + "from it, and without it the world knows them only by name."))
       : null,
+    h("div.lore-actions.lore-suggest", surprise,
+      h("span.muted", "Fills all three below. Change anything you like — nothing is stored until you keep them.")),
     tieChooser(redraw),
     temperChooser(redraw),
     h("div.lore-choice", h("h4", "In your own words"), concept,
