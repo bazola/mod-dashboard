@@ -52,6 +52,18 @@ export function loadTies(guid) {
   getJSON(`data/ties/${guid}.json`).then(land, () => land(held?.doc || { feels: [], felt_by: [] }));
 }
 
+// Everything one bot carries, fetched when their Memories tab is opened. Same shape as the ties above and
+// for the same reason: the panel's own file holds only the newest 400 across the whole world, so a bot's
+// own memories are not in it. Stamped against memories.json, so a new cycle refetches.
+export function loadMemories(guid) {
+  const stamp = state.memories?.generated;
+  const held = state.botMemories.get(guid);
+  if (held && held.stamp === stamp) return;
+  state.botMemories.set(guid, { stamp, doc: held?.doc || null, at: held?.at || 0 });
+  const land = doc => { state.botMemories.set(guid, { stamp, doc, at: Date.now() }); emit("botmemories", guid); };
+  getJSON(`data/memories/${guid}.json`).then(land, () => land(held?.doc || { memories: [] }));
+}
+
 // The whole of one of the Feelings panel's lists -- every moment, every conversation overheard, every
 // tie ranked warmest to coldest. Megabytes each, so they are fetched only when a full-screen view asks
 // for one, and re-fetched when regard.py has written a newer set.
@@ -98,4 +110,5 @@ export function startPolling() {
   watch("data/lore-edit.json", "loreEdit", DATA_MS);
   watch("data/market.json", "market", MARKET_MS);
   watch("data/chat.json", "chat", DATA_MS);
+  watch("data/memories.json", "memories", DATA_MS);
 }

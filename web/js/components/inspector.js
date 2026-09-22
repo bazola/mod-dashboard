@@ -4,7 +4,8 @@ import { h, icon, render } from "../lib/dom.js";
 import { CLASS_COLORS, clockS, signed, plural, capital } from "../lib/format.js";
 import { activity, factionOf, raceClass, scoreClass, onAnyContinent, companyColor } from "../lib/world.js";
 import { select, clearSelection, sendCommand } from "../actions.js";
-import { loadTies } from "../api.js";
+import { loadTies, loadMemories } from "../api.js";
+import { memoryRow } from "./memories.js";
 import { avatar, who, companyLink, factionBadge, statePill, empty, kpis, dmeter, section } from "./common.js";
 import { incident } from "./companies.js";
 
@@ -92,6 +93,21 @@ function ties(guid) {
       tieList(felt_by, t => [t.feeler_name, t.feeler], "felt")]);
 }
 
+// What this one bot still carries, heaviest first -- the order the module itself recalls them in, so the
+// top of this list is what actually reaches their prompts.
+function memories(guid) {
+  const held = state.botMemories.get(guid);
+  if (!held || !held.doc) return empty("Reading what they carry…", "book");
+  const ms = held.doc.memories || [];
+  if (!ms.length) return empty("They carry nothing yet.", "book");
+  const name = held.doc.name || "";
+  const defining = ms.filter(m => m[0] >= 9).length;
+  return h("div",
+    kpis([["memories", ms.length], ["defining", defining, defining ? "warm" : ""],
+          ["avg weight", (ms.reduce((s, m) => s + m[0], 0) / ms.length).toFixed(1)]]),
+    ms.map(m => memoryRow({ guid, name, importance: m[0], ts: m[1], text: m[2] })));
+}
+
 function details(p) {
   const leader = state.byGuid.get(p.group_leader);
   const master = state.byGuid.get(p.master);
@@ -116,12 +132,14 @@ function details(p) {
 function characterView(p) {
   const person = state.regard?.people[String(p.guid)];
   const tieCount = person ? person.n_feels + person.n_felt_by : 0;
+  const memCount = state.memories?.counts?.[String(p.guid)] || 0;
   const tab = state.inspectorTab;
   const pick = id => { state.inspectorTab = id; localSet("itab", id); emit("selection"); };
   return [
     hero(p),
-    tabs([["story", "Story"], ["ties", "Ties", tieCount], ["details", "Details"]], tab, pick),
-    h("div.tab-body", tab === "ties" ? ties(p.guid) : tab === "details" ? details(p) : story(p.guid)),
+    tabs([["story", "Story"], ["ties", "Ties", tieCount], ["memories", "Memories", memCount], ["details", "Details"]], tab, pick),
+    h("div.tab-body", tab === "ties" ? ties(p.guid) : tab === "memories" ? memories(p.guid)
+      : tab === "details" ? details(p) : story(p.guid)),
   ];
 }
 
@@ -131,7 +149,7 @@ function characterSig(p) {
   return ["c", p.guid, p.name, p.level, p.zone_name, p.map_name, p.instance, p.active, p.rpg, p.paused, p.dead, p.combat, p.flight, p.mounted,
     p.group_leader, leader, p.master, master, p.paused_since, (p.strategies || []).join(), (p.combat_strategies || []).join(), (p.saved_strategies || []).join(),
     state.busy, lr, state.inspectorTab, state.regard?.generated, !!state.lore,
-    state.ties.get(p.guid)?.at].join("|");
+    state.ties.get(p.guid)?.at, state.botMemories.get(p.guid)?.at, state.memories?.generated].join("|");
 }
 
 function goneView(guid) {
@@ -210,6 +228,7 @@ export function mountInspector(aside) {
     if (key !== shownKey) { shownKey = key; inner.scrollTop = 0; }
     if (state.selected != null) {
       if (state.inspectorTab === "ties") loadTies(state.selected);
+      if (state.inspectorTab === "memories") loadMemories(state.selected);
       const p = state.byGuid.get(state.selected);
       if (!p) render(inner, `gone|${state.selected}|${state.regard?.generated}`, () => goneView(state.selected));
       else render(inner, characterSig(p), () => characterView(p));
@@ -218,6 +237,6 @@ export function mountInspector(aside) {
     }
   }
 
-  on("selection snapshot busy lore regard ties companies theme", draw);
+  on("selection snapshot busy lore regard ties botmemories memories companies theme", draw);
 }
 
