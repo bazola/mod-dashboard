@@ -1,13 +1,13 @@
-// The companies of bots as a wall of cards, full screen over the dashboard, and one company on the map.
+// The groups of characters as a wall of cards, full screen over the dashboard, and one group on the map.
 // Opened from the Groups panel; #groups in the address opens it on load, so it can live in a tab of its own.
-// Clicking a card opens that company: its members on the map, highlighted, with their talk beneath.
+// Clicking a card opens that group: its members on the map, highlighted, with their talk beneath.
 import { state, on } from "../state.js";
 import { h, icon, render, esc } from "../lib/dom.js";
 import { stamp, full, plural, CLASSES, CLASS_COLORS } from "../lib/format.js";
 import { where, factionOf, describe } from "../lib/world.js";
 import { avatar, empty, factionBadge } from "./common.js";
 import { groupsNow, markSeen, ageWords, ageKey, linesFor, linesSplit, saidBy, placeOf, together,
-         spread, SAY_DISTANCE } from "../lib/groups.js";
+         spread, SAY_DISTANCE, hasReal, realsIn, memberWords } from "../lib/groups.js";
 import { select } from "../actions.js";
 
 const HASH = "#groups";
@@ -29,8 +29,8 @@ function bubble(g, l, past) {
 }
 
 // Oldest first, in two labelled halves. chat.json is keyed by speaker and knows nothing of groups, so the
-// earlier half was said in other companies -- to other companions, or to a real player -- and is always
-// named and dimmed as such. When a company has said nothing of its own, say so outright: silence read as
+// earlier half was said in other groups -- to other companions, or to a real player -- and is always
+// named and dimmed as such. When a group has said nothing of its own, say so outright: silence read as
 // a one-sided conversation is exactly how this first went wrong.
 function chatBody(g, before, after) {
   if (!before.length && !after.length) {
@@ -38,7 +38,7 @@ function chatBody(g, before, after) {
   }
   const out = [];
   if (before.length) {
-    out.push(h("div.gr-since", `earlier · ${plural(before.length, "line")} said in other companies`));
+    out.push(h("div.gr-since", `earlier · ${plural(before.length, "line")} said in other groups`));
     out.push(before.map(l => bubble(g, l, true)));
   }
   if (after.length) {
@@ -58,7 +58,7 @@ const toBottom = el => { el.scrollTop = el.scrollHeight; };
 function member(p, leader, said) {
   return h("div.gr-member",
     avatar(p),
-    h("span.gr-who", { class: p.guid === leader ? "lead" : "" }, p.name),
+    h("span.gr-who", { class: [p.bot ? "" : "real", p.guid === leader ? "lead" : ""].filter(Boolean).join(" ") }, p.name),
     h("span.muted", `${p.level} ${CLASSES[p.class] || ""}`),
     h("span.gr-said", { class: said ? "" : "none" }, said ? plural(said, "line") : "silent"),
     h("span.gr-mzone", where(p) || "—"));
@@ -68,19 +68,22 @@ function member(p, leader, said) {
 function farBadge(g) {
   const yd = Math.round(spread(g));
   if (yd <= SAY_DISTANCE) return null;
-  return h("span.badge.warn", { title: `The widest gap between any two members. Party chat has no range, so this does not stop them talking -- it is how to tell a company travelling together from one strung out across a zone` }, `${yd} yd apart`);
+  return h("span.badge.warn", { title: `The widest gap between any two members. Party chat has no range, so this does not stop them talking -- it is how to tell a group travelling together from one strung out across a zone` }, `${yd} yd apart`);
 }
 
 function card(g, onOpen) {
   const { all, before, after } = linesSplit(g);
   const chat = h("div.gr-chat", chatBody(g, before.slice(-CARD_LINES), after.slice(-CARD_LINES)));
   const el = h("div.gr-card", { role: "button", tabindex: "0",
-    title: "Open this company on the map",
+    class: hasReal(g) ? "has-real" : "",
+    title: "Open this group on the map",
     on: { click: () => onOpen(g.key), keydown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(g.key); } } } },
     h("div.gr-card-head",
       h("div.gr-names",
-        h("div.gr-name-line", h("span.gr-who", names(g)), factionBadge(factionOf(g.members[0]))),
-        h("div.gr-card-sub", `${plural(g.members.length, "bot")} · levels ${g.members.map(p => p.level).join(", ")}`)),
+        h("div.gr-name-line", h("span.gr-who", names(g)), factionBadge(factionOf(g.members[0])),
+          hasReal(g) && h("span.badge.real", { title: `${realsIn(g).map(p => p.name).join(", ")} -- a real player, not a bot` },
+            plural(realsIn(g).length, "player"))),
+        h("div.gr-card-sub", `${memberWords(g)} · levels ${g.members.map(p => p.level).join(", ")}`)),
       h("div.gr-stat",
         h("span.gr-age", { title: `Standing together since ${full(g.since / 1000)}, as first seen by the dashboard` }, ageWords(g.since)),
         h("span.muted", after.length ? plural(after.length, "line")
@@ -95,7 +98,7 @@ function card(g, onOpen) {
 
 export function mountGroupsGrid(root) {
   let back = null;        // focus to restore on close
-  let openKey = null;     // the company shown in the modal, if any
+  let openKey = null;     // the group shown in the modal, if any
   let map = null;         // the modal's Leaflet map, built on first open
   let layers = null;
   const app = document.getElementById("app");
@@ -104,9 +107,9 @@ export function mountGroupsGrid(root) {
   const count = h("span.meta");
   const grid = h("div.gr-grid");
   const scroll = h("div.gr-scroll", grid);
-  const overlay = h("div.gr-overlay", { role: "dialog", "aria-modal": "true", "aria-label": "Companies of bots", tabindex: "-1", hidden: true },
+  const overlay = h("div.gr-overlay", { role: "dialog", "aria-modal": "true", "aria-label": "Groups", tabindex: "-1", hidden: true },
     h("div.gr-bar",
-      h("div.gr-bar-title", icon("handshake", 17), "Companies"),
+      h("div.gr-bar-title", icon("handshake", 17), "Groups"),
       count,
       h("div.gr-bar-end",
         h("button.icon-btn", { type: "button", title: "Open in a new tab",
@@ -114,13 +117,13 @@ export function mountGroupsGrid(root) {
         h("button.icon-btn", { type: "button", title: "Close (Esc)", on: { click: hide } }, icon("x", 18)))),
     scroll);
 
-  // ---- One company ----
+  // ---- One group ----
   const mapEl = h("div.gr-map");
   const sheetTitle = h("div.gr-sheet-title");
   const sheetSub = h("div.card-sub");
   const sheetTags = h("div.gr-sheet-tags");
   const modalChat = h("div.gr-modal-chat");
-  const modal = h("div.gr-modal", { role: "dialog", "aria-modal": "true", "aria-label": "A company on the map", hidden: true,
+  const modal = h("div.gr-modal", { role: "dialog", "aria-modal": "true", "aria-label": "A group on the map", hidden: true,
     on: { click: e => { if (e.target === modal) closeOne(); } } },
     h("div.gr-sheet",
       h("div.gr-sheet-head",
@@ -157,7 +160,7 @@ export function mountGroupsGrid(root) {
     }
     for (const k of ["art", "zones", "dots"]) layers[k].clearLayers();
 
-    // The company's own map: the leader's, or the first member standing outdoors.
+    // The group's own map: the leader's, or the first member standing outdoors.
     const outdoors = g.members.filter(p => !p.instance);
     const anchor = outdoors.find(p => p.guid === g.leader) || outdoors[0];
     if (!anchor) {
@@ -188,13 +191,13 @@ export function mountGroupsGrid(root) {
         .addTo(layers.zones);
     }
 
-    // Everyone else on this map, dim and small, so the company can be seen standing among them.
+    // Everyone else on this map, dim and small, so the group can be seen standing among them.
     for (const p of state.players) {
       if (p.instance || String(p.map) !== mapId || here.includes(p)) continue;
       L.circleMarker(toLatLng(p.x, p.y), { renderer: layers.dotRenderer, radius: 3, weight: 0,
         fillColor: "#6f7a8c", fillOpacity: .5, interactive: false }).addTo(layers.dots);
     }
-    // ... and the company itself, highlighted, named, and clickable through to the dashboard's own map.
+    // ... and the group itself, highlighted, named, and clickable through to the dashboard's own map.
     let b = null;
     for (const p of here) {
       const at = toLatLng(p.x, p.y);
@@ -220,9 +223,11 @@ export function mountGroupsGrid(root) {
     const { all, before, after } = linesSplit(g);
     const yd = Math.round(spread(g));
     sheetTitle.textContent = names(g);
-    sheetSub.textContent = `${plural(g.members.length, "bot")} · together ${ageWords(g.since)} · ${placeOf(g)}`;
+    sheetSub.textContent = `${memberWords(g)} · together ${ageWords(g.since)} · ${placeOf(g)}`;
     render(sheetTags, `${g.key}|${all.length}|${after.length}|${together(g)}|${yd > SAY_DISTANCE}`, () => [
       factionBadge(factionOf(g.members[0])),
+      hasReal(g) && h("span.badge.real", { title: `${realsIn(g).map(p => p.name).join(", ")} -- a real player, not a bot` },
+        plural(realsIn(g).length, "player")),
       g.members.map(p => h("span.badge", { title: describe(p) },
         `${p.name} ${p.level} ${CLASSES[p.class] || ""} · ${saidBy(g, p) ? plural(saidBy(g, p), "line") : "silent"}`)),
       !together(g) && h("span.badge.warn", "standing apart"),
@@ -237,16 +242,18 @@ export function mountGroupsGrid(root) {
 
   function drawWall() {
     const gs = groups();
-    const bots = gs.reduce((n, g) => n + g.members.length, 0);
+    const members = gs.reduce((n, g) => n + g.members.length, 0);
+    const reals = gs.reduce((n, g) => n + realsIn(g).length, 0);
+    const who = reals ? `${plural(members - reals, "bot")} · ${plural(reals, "player")}` : plural(members, "bot");
     count.replaceChildren(icon("users", 13), gs.length
-      ? `${plural(gs.length, "company", "companies")} · ${plural(bots, "bot")} standing together`
+      ? `${plural(gs.length, "group")} · ${who} standing together`
       : "Nobody is grouped right now");
     // The distance badge turns on and off while they stand in the same zone, so the threshold belongs in
     // the signature: placeOf alone would leave it stale.
     const sig = gs.map(g => `${g.key}:${ageKey(g.since)}:${placeOf(g)}:${linesFor(g).length}:${spread(g) > SAY_DISTANCE}`).join("|")
       + `|${state.chat?.generated}`;
     render(grid, sig, () => gs.length ? gs.map(g => card(g, showOne))
-      : empty(state.players.length ? "No bots are standing together right now. Companies form a few minutes after a restart."
+      : empty(state.players.length ? "Nobody is standing together right now. Groups form a few minutes after a restart."
           : "Waiting for the first snapshot…", "handshake"));
   }
 
@@ -294,7 +301,7 @@ export function mountGroupsGrid(root) {
 
   const hideAll = hide;
 
-  // While open, keys belong here: Esc closes the company first, then the wall.
+  // While open, keys belong here: Esc closes the group first, then the wall.
   window.addEventListener("keydown", e => {
     if (overlay.hidden) return;
     e.stopPropagation();

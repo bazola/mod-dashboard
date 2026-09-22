@@ -282,6 +282,7 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .badge.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); background: color-mix(in srgb, var(--warn) 10%, transparent); }
 .badge.good { color: var(--warm); border-color: color-mix(in srgb, var(--warm) 40%, transparent); background: var(--warm-wash); }
 .badge.bad { color: var(--cold); border-color: color-mix(in srgb, var(--cold) 40%, transparent); background: var(--cold-wash); }
+.badge.real { color: var(--real); border-color: color-mix(in srgb, var(--real) 40%, transparent); background: color-mix(in srgb, var(--real) 11%, transparent); }
 
 .tag {
   display: inline-flex;

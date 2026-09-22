@@ -1,14 +1,20 @@
-// The companies of bots standing together right now, and the words they have exchanged.
+// The groups of characters standing together right now, and the words they have exchanged.
 //
-// A company leaves no trace that can be read back. The core does persist `groups`/`group_member`, but
+// A group is a party in the world -- the core's `groups`/`group_member`, five or so characters walking
+// together. It is deliberately not called a company: in this project a company is a guild (companies.json,
+// company_tables.sql, the Companies panel next door), and the two words had drifted into each other until
+// the rail carried two entries side by side both titled "Companies". Group here, company only for guilds.
+//
+// A group leaves no trace that can be read back. The core does persist `groups`/`group_member`, but
 // the dashboard issues no SQL by design, and ledger_chat carries no group id at all -- listener_guid is
 // NULL for every bot-to-bot party line, because mod-ledger only fills it from NearestRealPlayer. What
 // /bots does carry is group_leader per player, live to the 2 s snapshot. So membership comes from there
 // and the talk comes from data/chat.json, matched up by speaker.
 import { state, localGet, localSet } from "../state.js";
+import { plural } from "./format.js";
 import { where } from "./world.js";
 
-// A company is keyed by its members, not its leader: leadership passes between bots while they stand
+// A group is keyed by its members, not its leader: leadership passes between bots while they stand
 // together, and LeaveGroupAction hands it over on a level gap or a map change.
 export const keyOf = members => members.map(p => p.guid).sort((a, b) => a - b).join("-");
 
@@ -22,7 +28,7 @@ export function groupsNow() {
   }
   const out = [];
   for (const [leader, members] of by) {
-    // One member is a company half formed or half broken; it is not yet anybody's company.
+    // One member is a group half formed or half broken; it is not yet anybody's group.
     if (members.length < 2) continue;
     members.sort((a, b) => (b.guid === leader) - (a.guid === leader) || a.name.localeCompare(b.name));
     out.push({ leader, key: keyOf(members), members, since: Date.now() });
@@ -33,8 +39,8 @@ export function groupsNow() {
 // ---- How long they have stood together ----
 //
 // /bots has no join time, and ledger_event has a group_join row for fewer than half the bots standing in
-// a company right now, so neither can answer this. What the dashboard can say honestly is how long it
-// has watched them, kept across reloads in localStorage and pruned once a company is long gone.
+// a group right now, so neither can answer this. What the dashboard can say honestly is how long it
+// has watched them, kept across reloads in localStorage and pruned once a group is long gone.
 const SEEN_KEY = "groups.seen";
 const KEEP_MS = 36 * 3600 * 1000;
 
@@ -71,21 +77,21 @@ export const ageKey = since => Math.floor((Date.now() - since) / 60000);
 
 // ---- What they said ----
 //
-// chat.json is the whole party record, so lines these bots said in an earlier company are here too. That
-// is their whole chat history, which is what was asked for; the panel marks where this company begins.
+// chat.json is the whole party record, so lines these bots said in an earlier group are here too. That
+// is their whole chat history, which is what was asked for; the panel marks where this group begins.
 export function linesFor(g) {
   const guids = new Set(g.members.map(p => p.guid));
   return (state.chat?.lines || []).filter(l => guids.has(l.guid));
 }
 
-// Where the company is. A pair strung out behind its leader can be two zones or two continents apart,
+// Where the group is. A pair strung out behind its leader can be two zones or two continents apart,
 // which is worth seeing rather than hiding behind the leader's zone.
 export function placeOf(g) {
   const names = [...new Set(g.members.map(p => where(p) || "somewhere"))];
   return names.join(" · ");
 }
 
-// The talk in two halves: what was said before this company existed, and what it has said itself. A card
+// The talk in two halves: what was said before this group existed, and what it has said itself. A card
 // that runs them together reads as one strange conversation -- Pibuxall's 13 lines were said to a real
 // player a week ago and to a different companion this morning, none of them to the Alicey he now stands
 // with, who has never spoken at all.
@@ -97,13 +103,31 @@ export function linesSplit(g) {
 
 export const saidBy = (g, p) => linesFor(g).filter(l => l.guid === p.guid).length;
 
+// ---- Who is standing here ----
+//
+// /bots marks a real player with bot: false. The wall is otherwise all bots, so the group the player is
+// actually walking in is the one card that matters, and calling him a bot in it -- "3 bots" on his own
+// group -- was how this surfaced. hasReal also colours the card, in the same --real the roster row and
+// the map dot already give him.
+export const realsIn = g => g.members.filter(p => !p.bot);
+export const hasReal = g => g.members.some(p => !p.bot);
+
+// "3 bots", "2 bots · 1 player", "2 players" -- a player is never counted among the bots.
+export function memberWords(g) {
+  const reals = realsIn(g).length;
+  const bots = g.members.length - reals;
+  if (!reals) return plural(bots, "bot");
+  if (!bots) return plural(reals, "player");
+  return `${plural(bots, "bot")} · ${plural(reals, "player")}`;
+}
+
 export const together = g => new Set(g.members.map(p => where(p) || "")).size === 1;
 
 // `OllamaChat.SayDistance` (30.0 in the live conf) is the distance that gates SAY and YELL. It used to gate
-// bot-only party talk as well, which is why a spread-out company sat silent -- plans/36 removed that test,
+// bot-only party talk as well, which is why a spread-out group sat silent -- plans/36 removed that test,
 // because party chat is rangeless in 3.3.5. The threshold is kept here only as the point past which a
-// company is worth flagging as strung out rather than travelling together: a real signal for the director
-// work in plans/22 and 29, and no longer a reason a company will not speak.
+// group is worth flagging as strung out rather than travelling together: a real signal for the director
+// work in plans/22 and 29, and no longer a reason a group will not speak.
 export const SAY_DISTANCE = 30;
 
 export function spread(g) {

@@ -1,4 +1,4 @@
-/* Companies of bots: the dock list, the full-screen wall of cards, and one company on the map. */
+/* Groups of characters: the dock list, the full-screen wall of cards, and one group on the map. */
 
 /* ---- Dock panel ---- */
 .gr-row-end { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 11px; color: var(--ink-3); }
@@ -37,7 +37,7 @@
 .gr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-content: start; }
 .gr-grid > .empty { grid-column: 1 / -1; justify-content: center; padding: 48px 0; }
 
-/* ---- A company, as a card ---- */
+/* ---- A group, as a card ---- */
 .gr-card {
   display: flex;
   flex-direction: column;
@@ -52,6 +52,20 @@
 .gr-card:hover { border-color: var(--gold-line); transform: translateY(-2px); box-shadow: var(--shadow-2); }
 .gr-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
+/* A group with a real player standing in it. The wall runs to forty-odd cards of bots, so the one the
+   player is actually walking in should be findable without reading every name; --real is the colour the
+   roster row and the map dot already give him, and it is defined for both themes. */
+.gr-card.has-real { border-color: color-mix(in srgb, var(--real) 45%, transparent); }
+.gr-card.has-real:hover { border-color: color-mix(in srgb, var(--real) 72%, transparent); }
+.gr-card.has-real .gr-card-head {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--real) 13%, var(--bg-2)), var(--bg-1));
+  border-bottom-color: color-mix(in srgb, var(--real) 22%, transparent);
+}
+
+/* The same mark in the dock's compact list, where there is only room for an edge. */
+.row.has-real { box-shadow: inset 2px 0 0 var(--real); }
+.row.has-real .row-name { color: var(--real); }
+
 .gr-card-head {
   display: flex;
   align-items: flex-start;
@@ -64,6 +78,8 @@
 .gr-name-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; }
 .gr-who { font-size: 13.5px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
 .gr-who.lead { color: var(--gold-text); }
+/* After .lead on purpose: the player leads the group he is in, and being the real one says more. */
+.gr-who.real { color: var(--real); }
 .gr-card-sub { margin-top: 3px; font-size: 11.5px; color: var(--ink-3); }
 .gr-stat { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 11px; color: var(--ink-3); }
 
@@ -101,15 +117,15 @@
   text-align: center;
 }
 
-/* Lines said in other companies: shown, because they are this bot's history, but plainly not this
-   company's talk -- and a company that has said nothing of its own says so. */
+/* Lines said in other groups: shown, because they are this bot's history, but plainly not this
+   group's talk -- and a group that has said nothing of its own says so. */
 .bubble.past { opacity: .5; }
 .bubble.past b { font-style: italic; }
 .gr-note { align-self: center; margin: 5px 0 2px; font-size: 11.5px; font-style: italic; color: var(--ink-3); text-align: center; }
 .gr-said { flex: none; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .gr-said.none { color: var(--ink-3); font-style: italic; }
 
-/* ---- One company, on the map ---- */
+/* ---- One group, on the map ---- */
 .gr-modal {
   position: fixed;
   inset: 0;
