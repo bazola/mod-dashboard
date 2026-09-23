@@ -21,7 +21,7 @@ function tabs(items, current, onPick) {
 
 function hero(p) {
   const r = state.lastResult?.guid === p.guid ? state.lastResult : null;
-  return h("div.hero", { style: { "--cc": CLASS_COLORS[p.class] || "#d9a441" } },
+  return h("div.hero", { style: { "--cc": CLASS_COLORS[p.class] || "#7ddc6a" } },
     closeBtn(),
     h("div.hero-top", avatar(p, "lg"), h("div.hero-id", h("h2.hero-name", p.name), h("div.hero-sub", `Level ${p.level} ${raceClass(p)}`))),
     h("div.hero-tags",

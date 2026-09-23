@@ -91,7 +91,7 @@
 /* Tooltips: always dark, like the game's own */
 .leaflet-tooltip.dot-tip, .leaflet-tooltip.map-tip {
   padding: 8px 11px;
-  border: 1px solid rgba(232, 184, 90, .4);
+  border: 1px solid rgba(138, 235, 130, .4);
   border-radius: 8px;
   background: rgba(9, 12, 18, .95);
   color: #e9edf4;
@@ -102,8 +102,8 @@
 .leaflet-tooltip.dot-tip::before, .leaflet-tooltip.map-tip::before { display: none; }
 .tt-name { font-size: 13px; font-weight: 700; }
 .tt-sub { color: #b8c0cc; }
-.tt-zone { margin-top: 2px; font-size: 11px; color: #f0c872; }
-.tt-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: .03em; color: #f0c872; margin-bottom: 3px; }
+.tt-zone { margin-top: 2px; font-size: 11px; color: var(--gold-text); }
+.tt-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: .03em; color: var(--gold-text); margin-bottom: 3px; }
 .tt-line { display: block; color: #b8c0cc; }
 
 /* Zone names */

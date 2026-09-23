@@ -28,13 +28,15 @@
   --ink-2: #aab3c2;
   --ink-3: #6f7a8c;
 
-  /* Brand gold */
-  --gold: #d9a441;
-  --gold-hi: #f6d992;
-  --gold-text: #f0c872;
-  --gold-ink: #1b1306;
-  --gold-wash: rgba(232, 184, 90, .12);
-  --gold-line: rgba(232, 184, 90, .38);
+  /* Brand green. The token names stay --gold*: 85 uses across the stylesheets and three more in
+     journey-full.js pass them as inline colours, so renaming would be a functional change to a live
+     dashboard for a cosmetic gain. Values sampled from the logo's own flame. */
+  --gold: #7ddc6a;
+  --gold-hi: #a8fd96;
+  --gold-text: #9be88b;
+  --gold-ink: #0c1508;
+  --gold-wash: rgba(138, 235, 130, .12);
+  --gold-line: rgba(138, 235, 130, .38);
 
   /* Feeling and stance */
   --warm: #3ecf8e;
@@ -114,12 +116,12 @@
   --ink-2: #465061;
   --ink-3: #6f7888;
 
-  --gold: #c9922e;
-  --gold-hi: #ecc16b;
-  --gold-text: #8f5c05;
-  --gold-ink: #1d1405;
-  --gold-wash: rgba(201, 146, 46, .13);
-  --gold-line: rgba(176, 124, 30, .45);
+  --gold: #3f9e2f;
+  --gold-hi: #6fd15a;
+  --gold-text: #1f6b12;
+  --gold-ink: #06210a;
+  --gold-wash: rgba(63, 158, 47, .13);
+  --gold-line: rgba(47, 120, 35, .45);
 
   --warm: #0f8456;
   --cold: #cf3038;

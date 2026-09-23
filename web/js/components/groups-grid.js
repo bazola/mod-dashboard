@@ -203,7 +203,7 @@ export function mountGroupsGrid(root) {
       const at = toLatLng(p.x, p.y);
       b = b ? b.extend(at) : L.latLngBounds(at, at);
       L.circleMarker(at, { renderer: layers.dotRenderer, radius: 9, color: "#ffffff", weight: 3,
-        fillColor: CLASS_COLORS[p.class] || "#d9a441", fillOpacity: 1 })
+        fillColor: CLASS_COLORS[p.class] || "#7ddc6a", fillOpacity: 1 })
         .bindTooltip(`<div class="tt-name" style="color:${CLASS_COLORS[p.class] || "#fff"}">${esc(p.name)}</div>`
           + `<div class="tt-sub">${esc(describe(p))}</div><div class="tt-zone">${esc(where(p) || "")}</div>`,
           { direction: "top", offset: [0, -8], className: "dot-tip" })

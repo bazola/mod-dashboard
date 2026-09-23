@@ -5,7 +5,7 @@ import { clockS } from "../lib/format.js";
 import { setTheme } from "../actions.js";
 
 const BRAND = `<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
-  <defs><linearGradient id="brand-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8dfa0"/><stop offset="1" stop-color="#b5812c"/></linearGradient></defs>
+  <defs><linearGradient id="brand-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a8fd96"/><stop offset="1" stop-color="#479b31"/></linearGradient></defs>
   <path d="M16 1.5 30.5 16 16 30.5 1.5 16Z" fill="none" stroke="url(#brand-g)" stroke-width="1.6"/>
   <path d="M16 6 26 16 16 26 6 16Z" fill="none" stroke="url(#brand-g)" stroke-width="1" opacity=".55"/>
   <path d="M16 9.5 18.2 13.8 22.5 16 18.2 18.2 16 22.5 13.8 18.2 9.5 16 13.8 13.8Z" fill="url(#brand-g)"/>
