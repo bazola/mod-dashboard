@@ -20,7 +20,9 @@ export function mountRail(rail, dock) {
   const buttons = new Map(PANELS.map(p => [p.id,
     h("button.rail-btn", { type: "button", title: p.desc, on: { click: () => setPanel(p.id) } }, icon(p.icon, 20), h("span.lbl", p.label))]));
   const collapse = h("button.icon-btn.collapse", { type: "button", on: { click: () => setDock(!state.dockOpen) } }, icon("panel", 18));
-  rail.replaceChildren(...buttons.values(), h("div.rail-spacer"), collapse);
+  const community = h("a.icon-btn.rail-link", { href: "https://discord.com/invite/zpnYXhDs3X", target: "_blank", rel: "noopener",
+    title: "Discord \u2014 ask about Headless DM" }, icon("message", 18));
+  rail.replaceChildren(...buttons.values(), h("div.rail-spacer"), community, collapse);
 
   const title = h("h1.dock-title");
   const desc = h("div.dock-desc");

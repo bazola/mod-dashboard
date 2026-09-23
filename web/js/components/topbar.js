@@ -46,7 +46,10 @@ export function mountTopbar(root) {
   const themeBtn = h("button.icon-btn", { type: "button", on: { click: () => setTheme(state.theme === "dark" ? "light" : "dark") } });
 
   root.replaceChildren(
-    h("div.brand", h("span.brand-mark", { html: BRAND }), h("div", h("div.brand-name", "Living Azeroth"), h("div.brand-eyebrow", "Realm dashboard"))),
+    h("a.brand", { href: "https://bazola.github.io/headless-dm-page/", target: "_blank", rel: "noopener",
+      title: "Headless DM \u2014 the project site" },
+      h("span.brand-mark", { html: BRAND }),
+      h("div", h("div.brand-name", "Living Azeroth"), h("div.brand-eyebrow", "Realm dashboard"))),
     h("span.top-sep"),
     h("div.tiles", Object.values(t).map(x => x.el)),
     h("div.top-end", conn, themeBtn));
