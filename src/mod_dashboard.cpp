@@ -14,6 +14,7 @@
 #include "Map.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "BuiltInConfig.h"
 #include "ScriptMgr.h"
 #include "UpdateTime.h"
 #include "WorldSession.h"
@@ -571,12 +572,16 @@ namespace
     {
         std::string bind = sConfigMgr->GetOption<std::string>("Dashboard.Bind", "127.0.0.1");
         int port = sConfigMgr->GetOption<int32>("Dashboard.Port", 8787);
+        // Defaults must name no particular machine (plan 23 W11). The page ships inside this module,
+        // so it is found from the core's source directory; the two generated-data roots sit under the
+        // server's DataDir. Both stay overridable for a split install.
+        std::string dataDir = sConfigMgr->GetOption<std::string>("DataDir", ".");
         std::string webRoot = sConfigMgr->GetOption<std::string>("Dashboard.WebRoot",
-            "/opt/wow/azerothcore-wotlk/modules/mod-dashboard/web");
+            BuiltInConfig::GetSourceDirectory() + "/modules/mod-dashboard/web");
         std::string mapRoot = sConfigMgr->GetOption<std::string>("Dashboard.MapRoot",
-            "/opt/wow/server/data/dashboard-maps");
+            dataDir + "/dashboard-maps");
         std::string dataRoot = sConfigMgr->GetOption<std::string>("Dashboard.DataRoot",
-            "/opt/wow/server/data/dashboard-data");
+            dataDir + "/dashboard-data");
 
         std::stringstream ss(bind);
         std::string host;

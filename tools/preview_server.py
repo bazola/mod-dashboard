@@ -22,8 +22,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "web"
-DBC = Path("/opt/wow/server/data/dbc")
-CONF = Path("/opt/wow/server/etc/worldserver.conf")
+# Paths come from the environment so this tool carries no one machine's layout (plan 23 W11).
+DBC = Path(os.environ.get("DASHBOARD_DBC", "/opt/wow/server/data/dbc"))
+CONF = Path(os.environ.get("WORLDSERVER_CONF", "/opt/wow/server/etc/worldserver.conf"))
 CONTINENTS = (0, 1, 530, 571)
 INSTANCE_TYPES = {1, 2, 3, 4}  # instance, raid, battleground, arena
 HORDE_RACES = {2, 5, 6, 8, 10}
