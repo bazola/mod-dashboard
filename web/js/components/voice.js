@@ -24,7 +24,7 @@ let queue = null;          // a whole section playing: { items, at, onEnd }
 // The gate publishes voices/index.json after every cast and every line: who has a voice, and every line
 // said aloud keyed by its exact words, so the page can tell a recorded line from an unrecorded one with
 // no token and no round trip.
-const index = { voices: new Map(), names: new Map(), lines: new Map() };
+const index = { enabled: false, voices: new Map(), names: new Map(), lines: new Map() };
 const buttons = new Set();     // every speaker drawn, so a new recording can light it up
 const listeners = new Set();
 
@@ -33,6 +33,9 @@ async function loadIndex() {
     const res = await fetch("data/voices/index.json", { cache: "no-store" });
     if (!res.ok) return;
     const doc = await res.json();
+    // Voices are optional. A realm with no speech key (or VOICE_ENABLED=0) publishes enabled: false, and a
+    // realm whose gate never ran has no file at all: either way the page shows no speaker anywhere.
+    index.enabled = doc.enabled === true;
     index.voices = new Map(Object.entries(doc.voices || {}).map(([g, n]) => [Number(g), n]));
     index.names = new Map([...index.voices].map(([g, n]) => [n.toLowerCase(), g]));
     index.lines = new Map(Object.entries(doc.lines || {}).map(([g, m]) => [Number(g), new Map(Object.entries(m))]));
@@ -41,6 +44,7 @@ async function loadIndex() {
 }
 loadIndex();
 
+export const voicesOn = () => index.enabled;
 const guidOf = who => who.guid != null ? Number(who.guid) : index.names.get(String(who.name || "").toLowerCase());
 export const hasVoice = who => { const g = guidOf(who); return g != null && index.voices.has(g); };
 export const clipOf = (who, text) => { const g = guidOf(who); return g == null ? null : index.lines.get(g)?.get(text) || null; };
@@ -325,6 +329,7 @@ async function speak(who, text, btn) {
 // A small speaker on a line of talk. `who` is { guid } when the record has one, else { name }.
 // Three looks: no voice cast yet (faint), a voice but this line unrecorded (plain), recorded (gold).
 export function sayButton(who, text) {
+  if (!index.enabled) return null;
   const btn = h("button.vc-say", { type: "button",
     on: { click: e => { e.stopPropagation(); speak(who, text, btn); } } }, icon("volume", 12));
   const b = { btn, who, text };

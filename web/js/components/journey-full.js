@@ -15,7 +15,7 @@ import { scoreClass } from "../lib/world.js";
 import { loadJourney } from "../api.js";
 import { empty, kpis, avatar, factionBadge, who as whoLink } from "./common.js";
 import { toast } from "./toast.js";
-import { sayButton, voiceOpen, clipOf, hasVoice, onVoices, playAll, playingQueue, recordAll, exportSection, stop as stopVoices } from "./voice.js";
+import { sayButton, voiceOpen, clipOf, hasVoice, onVoices, playAll, playingQueue, recordAll, exportSection, voicesOn, stop as stopVoices } from "./voice.js";
 
 const HASH = "#journey";
 const PAGE = 90;              // render-plan rows added each time the foot comes into view
@@ -316,7 +316,7 @@ export function mountJourneyFull(root) {
   function chapterNode(c) {
     const others = [...c.with].filter(g => g !== guid).slice(0, 5);
     const voice = h("span.jy-chapter-voice");
-    const lines = spoken(c);
+    const lines = voicesOn() ? spoken(c) : [];
     if (lines.length) { const v = { el: voice, c, lines }; voiceHeads.add(v); drawVoiceHead(v); }
     return h("div.jy-chapter-head",
       icon("pin", 12),
@@ -405,7 +405,11 @@ export function mountJourneyFull(root) {
       drawVoiceHead(v);
     }
   }
-  onVoices(refreshVoiceHeads);
+  let wasOn = voicesOn();
+  onVoices(() => {
+    if (voicesOn() !== wasOn) { wasOn = voicesOn(); if (!overlay.hidden) rebuild(); return; }
+    refreshVoiceHeads();
+  });
 
   // ---- building and paging ----
   function rebuild() {
