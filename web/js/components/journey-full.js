@@ -15,6 +15,7 @@ import { scoreClass } from "../lib/world.js";
 import { loadJourney } from "../api.js";
 import { empty, kpis, avatar, factionBadge, who as whoLink } from "./common.js";
 import { toast } from "./toast.js";
+import { sayButton, voiceOpen, clipOf, hasVoice, onVoices, playAll, playingQueue, recordAll, exportSection, stop as stopVoices } from "./voice.js";
 
 const HASH = "#journey";
 const PAGE = 90;              // render-plan rows added each time the foot comes into view
@@ -242,14 +243,14 @@ export function mountJourneyFull(root) {
     const body = h("div.jy-talk-body");
     const fill = all => {
       const use = all ? e.lines : shown;
-      body.replaceChildren(
+      body.replaceChildren(...[
         !all && e.lines.length > use.length
           ? h("button.jy-talk-more", { type: "button", on: { click: () => fill(true) } },
               `Read all ${num(e.lines.length)} lines`)
           : null,
         ...use.map(([g, ts, text]) =>
           h("div.bubble", { class: g === guid ? "a" : "b", title: full(ts) },
-            h("b", `${nameOf(g)} · ${clock(ts)}`), text)));
+            h("b", `${nameOf(g)} · ${clock(ts)}`, sayButton({ guid: g }, text)), text))].filter(Boolean));
     };
     fill(false);
     const block = h("div.jy-talk",
@@ -265,7 +266,7 @@ export function mountJourneyFull(root) {
   function encounterNode(e) {
     const body = h("div.jy-talk-body",
       ...e.lines.map(([name, text]) =>
-        h("div.bubble", { class: name === doc()?.name ? "a" : "b" }, h("b", name), text)));
+        h("div.bubble", { class: name === doc()?.name ? "a" : "b" }, h("b", name, sayButton({ name }, text)), text)));
     const moments = (e.moments || []).length
       ? h("div.moments", e.moments.map(m => h("div.moment",
           h("span.delta", { class: scoreClass(m.feels * 10) }, signed(m.feels)),
@@ -314,18 +315,104 @@ export function mountJourneyFull(root) {
 
   function chapterNode(c) {
     const others = [...c.with].filter(g => g !== guid).slice(0, 5);
+    const voice = h("span.jy-chapter-voice");
+    const lines = spoken(c);
+    if (lines.length) { const v = { el: voice, c, lines }; voiceHeads.add(v); drawVoiceHead(v); }
     return h("div.jy-chapter-head",
       icon("pin", 12),
       h("span.jy-chapter-where", c.place || "Somewhere"),
       others.length ? h("span.jy-chapter-with", "with ", ...others.flatMap((g, i) => [i ? ", " : "", personLink(g)])) : null,
+      voice,
       h("span.jy-chapter-when", span(c.to, c.from)));
   }
+
+  // ---- a section read aloud (plan 57) ----
+  //
+  // Every line spoken in a section, oldest first: party talk carries a guid per line, a conversation no
+  // one overheard only a name. Items arrive newest first; the lines inside a talk are already in order.
+  let voiceHeads = new Set();
+  let recording = null;       // the one section being recorded: the job recordAll reports
+  const COST_PER_CHAR = 15 / 1e6;   // Fish S2.1 Pro through OpenRouter, $ per character
+  function spoken(c) {
+    const out = [];
+    for (const e of [...c.items].reverse()) {
+      if (e.k === "talk") for (const [g, ts, text] of e.lines) out.push({ who: { guid: g }, text, ts });
+      else if (e.k === "encounter") for (const [name, text] of e.lines) out.push({ who: { name }, text, ts: e.ts });
+    }
+    return out;
+  }
+  function drawVoiceHead(v) {
+    const done = v.lines.filter(l => clipOf(l.who, l.text)).length;
+    const total = v.lines.length;
+    const playing = playingQueue()?.items === v.lines;
+    const unvoiced = new Set(v.lines.filter(l => !hasVoice(l.who)).map(l => l.who.name || nameOf(l.who.guid)));
+    const count = h("span.jy-voice-count", { class: done === total ? "all" : "",
+      title: done === total ? "Every line in this section is recorded"
+        : `${num(total - done)} of ${num(total)} lines still to record`
+          + (unvoiced.size ? ` · no voice yet: ${[...unvoiced].slice(0, 6).join(", ")}` : "") },
+      icon("volume", 11), `${num(done)}/${num(total)}`);
+    const rec = recording && recording.lines === v.lines ? recording : null;
+    const left = v.lines.filter(l => !clipOf(l.who, l.text));
+    const cost = left.reduce((a, l) => a + l.text.length, 0) * COST_PER_CHAR;
+    const recordBtn = rec
+      ? h("span.jy-voice-rec",
+          icon("activity", 11),
+          rec.stage === "cast" ? `Casting${rec.casting ? ` ${rec.casting}` : ""}…`
+            : rec.stage === "record" ? `Recording ${num(rec.done + rec.failed)}/${num(rec.total)}…` : "Finishing…",
+          h("button.chip", { type: "button", title: "Stop recording; what is recorded stays",
+            on: { click: e => { e.stopPropagation(); rec.cancelled = true; drawVoiceHead(v); } } },
+            rec.cancelled ? "Stopping…" : "Stop"))
+      : done < total && h("button.chip.jy-voice-record", { type: "button", disabled: !!recording,
+          title: `Record the ${num(left.length)} lines left, about $${cost < 0.01 ? cost.toFixed(3) : cost.toFixed(2)}.`
+            + (unvoiced.size ? ` First you cast a voice for: ${[...unvoiced].slice(0, 6).join(", ")}.` : ""),
+          on: { click: async e => {
+            e.stopPropagation();
+            stopVoices();
+            recording = { lines: v.lines, stage: "cast" };
+            refreshVoiceHeads();
+            await recordAll(v.lines, job => { recording = job; refreshVoiceHeads(); });
+            recording = null;
+            refreshVoiceHeads();
+          } } },
+          icon("volume", 11), "Record the rest");
+    v.el.replaceChildren(...[count, recordBtn, !rec && done === total
+      ? h("button.chip.jy-voice-play", { type: "button", class: playing ? "on" : "",
+          title: playing ? "Stop" : "Play every line in this section, in order",
+          on: { click: e => {
+            e.stopPropagation();
+            if (playingQueue()?.items === v.lines) return stopVoices();
+            playAll(v.lines, () => refreshVoiceHeads());
+            refreshVoiceHeads();
+          } } },
+          icon(playing ? "pause" : "play", 11), playing ? "Stop" : "Play all")
+      : null,
+      !rec && done === total ? h("button.chip.jy-voice-play", { type: "button", disabled: v.packing,
+          title: "Download the section: every line as its own file, the whole thing as one track (as it "
+            + "happened, and back to back), subtitles for both, and a manifest",
+          on: { click: async e => {
+            e.stopPropagation();
+            v.packing = true; drawVoiceHead(v);
+            const title = `${doc()?.name || ""} ${v.c.place || ""}`.trim();
+            await exportSection(v.lines, title);
+            v.packing = false; drawVoiceHead(v);
+          } } },
+          icon(v.packing ? "activity" : "download", 11), v.packing ? "Packing…" : "Download")
+      : null].filter(Boolean));
+  }
+  function refreshVoiceHeads() {
+    for (const v of voiceHeads) {
+      if (!v.el.isConnected) { voiceHeads.delete(v); continue; }
+      drawVoiceHead(v);
+    }
+  }
+  onVoices(refreshVoiceHeads);
 
   // ---- building and paging ----
   function rebuild() {
     query = search.value.trim().toLowerCase();
     const d = doc();
     drawn = 0;
+    voiceHeads = new Set();
     list.replaceChildren();
     if (!d) {
       const cur = held();
@@ -734,6 +821,7 @@ export function mountJourneyFull(root) {
 
   function hide() {
     if (overlay.hidden) return;
+    stopVoices();
     overlay.hidden = true;
     picker.hidden = true;
     io.unobserve(foot);
@@ -743,7 +831,7 @@ export function mountJourneyFull(root) {
   }
 
   window.addEventListener("keydown", e => {
-    if (overlay.hidden) return;
+    if (overlay.hidden || voiceOpen()) return;   // the voice caster sits above the journey and has its own Escape
     e.stopPropagation();
     if (e.key === "Escape") {
       e.preventDefault();
