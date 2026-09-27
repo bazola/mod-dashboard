@@ -15,7 +15,7 @@ import { scoreClass } from "../lib/world.js";
 import { loadJourney } from "../api.js";
 import { empty, kpis, avatar, factionBadge, who as whoLink } from "./common.js";
 import { toast } from "./toast.js";
-import { sayButton, voiceOpen, clipOf, hasVoice, onVoices, playAll, playingQueue, recordAll, exportSection, voicesOn, stop as stopVoices } from "./voice.js";
+import { sayButton, voiceOpen, clipOf, hasVoice, onVoices, playAll, playingQueue, recordAll, exportSection, voicesOn, changeVoice, stop as stopVoices } from "./voice.js";
 
 const HASH = "#journey";
 const PAGE = 90;              // render-plan rows added each time the foot comes into view
@@ -409,6 +409,7 @@ export function mountJourneyFull(root) {
   onVoices(() => {
     if (voicesOn() !== wasOn) { wasOn = voicesOn(); if (!overlay.hidden) rebuild(); return; }
     refreshVoiceHeads();
+    paintVoiceBtn();
   });
 
   // ---- building and paging ----
@@ -480,6 +481,20 @@ export function mountJourneyFull(root) {
   }
 
   // ---- the header ----
+  // Their voice: "Change voice" once they have one (hear samples, keep a new one, re-record their lines),
+  // "Give a voice" before. Kept outside render() so a new voice relabels it without rebuilding the header.
+  const voiceBtn = h("button.chip.jy-voice-btn", { type: "button",
+    on: { click: () => { const d = doc(); if (d) changeVoice({ guid: d.guid, name: d.name }); } } });
+  function paintVoiceBtn() {
+    const d = doc();
+    voiceBtn.hidden = !d || !voicesOn();
+    if (voiceBtn.hidden) return;
+    const has = hasVoice({ guid: d.guid });
+    voiceBtn.title = has ? `Hear samples of a new voice for ${d.name}, keep one, and re-record their lines`
+      : `Give ${d.name} a voice`;
+    voiceBtn.replaceChildren(icon("volume", 12), has ? "Change voice" : "Give a voice");
+  }
+
   function drawHead() {
     const d = doc();
     // The button names whoever is being read. It is set here and not in go(), because when go() runs
@@ -498,7 +513,7 @@ export function mountJourneyFull(root) {
     render(head, `${d.guid}|${d.kept}|${state.journeys?.generated}`, () => [
       h("div.jy-id", { style: { "--cc": CLASS_COLORS[d.cls] || "var(--gold)" } },
         avatar({ class: d.cls }, "lg"),
-        h("div", h("div.jy-name", d.name),
+        h("div", h("div.jy-name-row", h("div.jy-name", d.name), voiceBtn),
           h("div.jy-sub", `Level ${d.level} ${RACES[d.race] || ""} ${CLASSES[d.cls] || ""}`.replace(/\s+/g, " ").trim()))),
       h("div.jy-tags",
         factionBadge(HORDE.has(d.race) ? "Horde" : "Alliance"),
@@ -513,6 +528,7 @@ export function mountJourneyFull(root) {
         ["memories", num(c.memory || 0)],
         ["companions", num(companions.size)],
       ]),
+      paintVoiceBtn(),
       total > d.kept && h("div.jy-panel-note",
         `Showing the most recent ${num(d.kept)} of ${num(total)}: each kind is kept to its latest few hundred.`),
     ]);

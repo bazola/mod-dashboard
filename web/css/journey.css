@@ -76,6 +76,8 @@
 .jy-id { --cc: var(--gold); display: flex; align-items: center; gap: 12px; min-width: 0; }
 .jy-name { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: .02em; color: var(--ink); overflow-wrap: anywhere; }
 .jy-sub { margin-top: 2px; font-size: 12px; color: var(--ink-3); }
+.jy-name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.jy-voice-btn { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; font-size: 11.5px; }
 .jy-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 /* 94px, not the panel's 66: "conversations" and "companions" clip to "conversatio…" below it. The
    580px basis is the six of them side by side (6x94 plus gaps), so a wide badge row above pushes the
@@ -490,3 +492,19 @@
 .jy-voice-rec { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gold-text); font-variant-numeric: tabular-nums; }
 .jy-voice-rec .chip { padding: 1px 8px; font-size: 11px; }
 .vc-queue { margin-top: 5px; font-size: 11.5px; color: var(--gold-text); }
+
+/* Changing a voice: the one they have now, and the lines recorded in it, to be said again in the new one. */
+.vc-now-row { display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; line-height: 1.45; }
+.vc-now-play { flex: none; padding: 3px 10px; font-size: 11.5px; }
+.vc-now-style { padding-top: 3px; }
+.vc-lines-wrap { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.vc-redo { padding: 3px 10px; font-size: 11.5px; letter-spacing: 0; text-transform: none; }
+.vc-lines { display: flex; flex-direction: column; gap: 2px; max-height: min(260px, 36vh); overflow-y: auto; margin-top: 6px; }
+.vc-line-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 4px 6px; border-radius: var(--radius-s); font-size: 12.5px; line-height: 1.4; }
+.vc-line-row:nth-child(odd) { background: var(--bg-2); }
+.vc-line-row .vc-say { opacity: 1; margin-left: 0; vertical-align: 0; }
+.vc-line-row .vc-say:disabled { opacity: .35; cursor: default; background: transparent; color: var(--ink-3); }
+.vc-line-row.stale .vc-line-text { color: var(--ink-3); }
+.vc-line-text { min-width: 0; overflow-wrap: anywhere; }
+.vc-line-state { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+.vc-line-row.failed .vc-line-state { color: var(--horde); }

@@ -3,7 +3,11 @@
 // The first time a character is heard they have no voice, so a caster opens: the gate writes a
 // description of how they sound from their race, class, sex and personality, the player edits it, hears
 // a sample, and accepts or declines. An accepted sample IS the voice -- every later line is cloned from
-// that clip -- so it is locked from then on and the caster never opens for them again.
+// that clip -- so a line never opens the caster for them again.
+//
+// A voice changes only when the player asks: "Change voice" on the Journey header opens the same caster
+// with their voice now beside it. Accepting a new one leaves every line already recorded in the old voice;
+// the caster then lists those lines and re-records them, all at once or one by one.
 //
 // Everything goes through the lore gate (it holds the speech key; mod-dashboard caps a body at 1024
 // bytes and answers no preflight). The audio itself is read from the static /data mount, no token.
@@ -136,7 +140,9 @@ export const playingQueue = () => queue;
 // ---- the caster ----
 let modal = null;
 const ui = {};
-let cast = null;           // { who, guid, sample, onKeep }
+let cast = null;           // { who, guid, sample, onKeep, onCancel, voice, lines, recast, job }
+const COST_PER_CHAR = 15 / 1e6;   // Fish S2.1 Pro through OpenRouter, $ per character
+const dollars = c => `$${c < 0.01 ? c.toFixed(3) : c.toFixed(2)}`;
 
 export const voiceOpen = () => !!modal && !modal.hidden;
 
@@ -158,6 +164,15 @@ function build() {
   ui.accept = h("button.btn.btn-primary", { type: "button", on: { click: () => accept() } }, icon("check", 13), "Accept this voice");
   ui.decline = h("button.btn", { type: "button", on: { click: () => { discardSample(); draw(); } } }, icon("x", 13), "Decline");
   ui.status = h("div.vc-status");
+  ui.nowPlay = h("button.btn.vc-now-play", { type: "button", title: "Hear the voice they have now",
+    on: { click: () => cast?.voice && play(cast.voice.sample_url, ui.nowPlay) } }, icon("play", 13), "Hear it");
+  ui.nowStyle = h("div.vc-quote.vc-now-style");
+  ui.now = h("div.vc-now", h("label.vc-label", "Their voice now"), h("div.vc-now-row", ui.nowPlay, ui.nowStyle));
+  ui.note = h("span");
+  ui.linesHead = h("span.vc-lines-count");
+  ui.redo = h("button.btn.vc-redo", { type: "button", on: { click: () => cast?.job ? (cast.job.cancelled = true, draw()) : redoAll() } });
+  ui.lineList = h("div.vc-lines");
+  ui.lines = h("div.vc-lines-wrap", h("label.vc-label", ui.linesHead, ui.redo), ui.lineList);
   ui.close = h("button.icon-btn", { type: "button", title: "Close (Esc)", on: { click: () => closeCaster() } }, icon("x", 18));
 
   modal = h("div.vc-modal", { role: "dialog", "aria-modal": "true", "aria-label": "Give them a voice", hidden: true,
@@ -166,14 +181,15 @@ function build() {
       h("div.vc-head", icon("volume", 18), h("div.vc-head-text", ui.title, ui.sub, ui.queue), ui.close),
       h("div.vc-body",
         ui.persona,
+        ui.now,
         h("label.vc-label", "How they sound", ui.suggest),
         ui.style,
         h("label.vc-label", "What the sample says"),
         ui.line,
-        h("div.vc-note", icon("info", 12),
-          h("span", "Once you accept, this voice is theirs for good: every line they say is cloned from this sample.")),
+        h("div.vc-note", icon("info", 12), ui.note),
         ui.status,
-        h("div.vc-actions", ui.hear, ui.replay, ui.decline, ui.accept))));
+        h("div.vc-actions", ui.hear, ui.replay, ui.decline, ui.accept),
+        ui.lines)));
   document.body.append(modal);
 
   window.addEventListener("keydown", e => {
@@ -184,12 +200,21 @@ function build() {
 function draw() {
   if (!cast) return;
   const w = cast.who;
-  ui.title.textContent = `Give ${w.name} a voice`;
+  ui.title.textContent = cast.voice ? `Change ${w.name}'s voice` : `Give ${w.name} a voice`;
+  ui.now.hidden = !cast.voice;
+  ui.nowStyle.textContent = cast.voice?.style || "";
+  const kept = (cast.lines || []).filter(l => l.current).length;
+  ui.note.textContent = !cast.voice
+    ? "Once you accept, this voice is theirs: every line they say is cloned from this sample."
+    : kept
+      ? `Accepting replaces their voice. The ${kept} line${kept === 1 ? "" : "s"} already recorded stay in the old `
+        + "voice until you re-record them below."
+      : "Accepting replaces their voice. Every line they say from then on is cloned from the new sample.";
   ui.sub.textContent = [`${capital(w.race)} ${w.cls}`, w.sex, `level ${w.level}`].join(" · ");
   ui.persona.replaceChildren(
     w.temperament ? h("span.pill", capital(w.temperament)) : null,
     w.personality ? h("span.vc-quote", w.personality) : h("span.muted", "No personality has been written for them."));
-  const busy = !!cast.busy;
+  const busy = !!cast.busy || !!cast.job;
   ui.style.disabled = busy && cast.busy === "suggest";
   ui.suggest.disabled = busy;
   ui.line.disabled = busy;
@@ -201,8 +226,92 @@ function draw() {
   ui.decline.hidden = !cast.sample;
   ui.accept.hidden = !cast.sample;
   ui.accept.disabled = busy;
+  ui.accept.replaceChildren(icon("check", 13), cast.voice ? "Use this voice instead" : "Accept this voice");
   ui.status.textContent = cast.status || "";
   ui.status.className = "vc-status" + (cast.bad ? " bad" : "");
+  drawLines();
+}
+
+// ---- the lines they have had recorded, when their voice is being changed ----
+//
+// Each line is either in the voice they have now, or in one since changed (stale). The stale ones are
+// said again in the new voice, one at a time (the gate records one line per speaker at once anyway), and
+// the old take is removed by the gate as each new one lands.
+function drawLines() {
+  const lines = cast.recast ? cast.lines || [] : [];
+  ui.lines.hidden = !lines.length;
+  if (!lines.length) return;
+  const stale = lines.filter(l => !l.current);
+  const job = cast.job;
+  ui.linesHead.textContent = stale.length
+    ? `Still in the old voice · ${stale.length} of ${lines.length}`
+    : `Lines recorded · ${lines.length}`;
+  ui.redo.hidden = !stale.length && !job;
+  ui.redo.disabled = !!cast.busy || !!job?.cancelled;
+  ui.redo.classList.toggle("btn-primary", !job);
+  const cost = stale.reduce((a, l) => a + l.chars, 0) * COST_PER_CHAR;
+  ui.redo.title = job ? "Stop; what is re-recorded stays" : `Say every one again in the new voice, about ${dollars(cost)}`;
+  ui.redo.replaceChildren(icon(job ? "pause" : "volume", 13),
+    job ? (job.cancelled ? "Stopping…" : `Re-recording ${job.done + job.failed + 1} of ${job.total}… Stop`)
+      : `Re-record all ${stale.length}`);
+  ui.lineList.replaceChildren(...lines.map(l => {
+    const btn = h("button.vc-say", { type: "button",
+      class: l.busy ? "busy" : l.current ? "done" : "",
+      title: l.busy ? "Recording…" : l.current ? "Play" : cast.voice ? "Re-record this line in the new voice" : "",
+      disabled: !l.current && (!!job || !!cast.busy || !!l.busy),
+      on: { click: () => l.current ? play(l.url, btn) : redoOne(l) } }, icon(l.current ? "play" : "volume", 12));
+    return h("div.vc-line-row", { class: [l.current ? "current" : "stale", l.failed ? "failed" : ""].join(" ") },
+      btn,
+      h("span.vc-line-text", l.text),
+      h("span.vc-line-state", l.busy ? "recording…" : l.failed ? "failed" : l.current ? "" : "old voice"));
+  }));
+}
+
+// `c` is the caster this was started from: the modal may be closed, or opened for someone else, mid-line.
+async function sayAgain(c, l) {
+  l.busy = true; l.failed = false;
+  if (cast === c) drawLines();
+  try {
+    const r = await gate("/voice-line", { guid: c.guid, text: l.text });
+    Object.assign(l, { url: r.url, current: true });
+    if (!index.lines.has(c.guid)) index.lines.set(c.guid, new Map());
+    index.lines.get(c.guid).set(l.text, r.url);
+    changed();
+    return true;
+  } catch (e) {
+    l.failed = true;
+    c.status = e.message; c.bad = true;
+    return false;
+  } finally {
+    l.busy = false;
+  }
+}
+
+async function redoOne(l) {
+  if (!cast || cast.job) return;
+  const mine = cast;
+  await sayAgain(mine, l);
+  if (cast === mine) draw();
+}
+
+async function redoAll() {
+  const mine = cast;
+  const todo = (mine.lines || []).filter(l => !l.current);
+  if (!todo.length) return;
+  stop();
+  const job = mine.job = { total: todo.length, done: 0, failed: 0, cancelled: false };
+  mine.status = ""; mine.bad = false;
+  draw();
+  for (const l of todo) {
+    if (job.cancelled || cast !== mine) break;
+    (await sayAgain(mine, l)) ? job.done++ : job.failed++;
+    if (cast === mine) draw();
+  }
+  mine.job = null;
+  const said = [`${job.done} re-recorded`, job.failed && `${job.failed} failed`,
+    job.cancelled && `${job.total - job.done - job.failed} left in the old voice`].filter(Boolean).join(", ");
+  toast({ ok: !job.failed, title: job.cancelled ? "Re-recording stopped" : `${mine.who.name}'s lines re-recorded`, text: said });
+  if (cast === mine) { mine.status = said; mine.bad = !!job.failed; draw(); }
 }
 
 async function suggest() {
@@ -225,7 +334,8 @@ async function makeSample() {
   cast.busy = "sample"; cast.status = ""; cast.bad = false;
   draw();
   try {
-    const r = await gate("/voice-sample", { guid: cast.guid, style: ui.style.value, text: ui.line.value });
+    const r = await gate("/voice-sample", { guid: cast.guid, style: ui.style.value, text: ui.line.value,
+      recast: !!cast.voice });
     cast.sample = r;
     ui.style.value = r.style;
     cast.status = r.warning || "Listen. Accept it, or change the description and try again.";
@@ -250,14 +360,32 @@ async function accept() {
   if (!cast?.sample) return;
   cast.busy = "accept"; draw();
   try {
-    const r = await gate("/voice-accept", { guid: cast.guid, sample: cast.sample.sample });
+    const recast = !!cast.voice;
+    const r = await gate("/voice-accept", { guid: cast.guid, sample: cast.sample.sample, recast });
     cast.sample = null;                       // kept now, so closing must not decline it
     index.voices.set(cast.guid, cast.who.name);
     index.names.set(cast.who.name.toLowerCase(), cast.guid);
+    if (recast) {
+      // Their old lines are not theirs any more; the index the gate just published no longer holds them.
+      index.lines.delete(cast.guid);
+      changed();
+      loadIndex();
+      cast.voice = r.voice;
+      cast.lines = r.lines || [];
+      cast.busy = null;
+      const stale = cast.lines.filter(l => !l.current).length;
+      cast.status = stale ? `A new voice, kept. ${stale} line${stale === 1 ? " is" : "s are"} still in the old one: `
+        + "re-record them below, or later from each section." : "A new voice, kept.";
+      cast.bad = false;
+      toast({ ok: true, title: `${cast.who.name} has a new voice` });
+      draw();
+      if (stale) ui.lines.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      return;
+    }
     changed();
     const done = cast.onKeep;
     cast.onCancel = null;
-    toast({ ok: true, title: `${cast.who.name} has a voice`, text: "It is theirs now, and it will not change." });
+    toast({ ok: true, title: `${cast.who.name} has a voice`, text: "It is theirs now. Change voice on their journey can give them another." });
     closeCaster();
     done?.(r.voice);
   } catch (e) {
@@ -265,20 +393,23 @@ async function accept() {
   }
 }
 
-function openCaster(state, onKeep, onCancel, note) {
+function openCaster(state, onKeep, onCancel, note, recast = false) {
   if (!modal) build();
-  cast = { who: state.who, guid: state.who.guid, sample: null, onKeep, onCancel };
+  cast = { who: state.who, guid: state.who.guid, sample: null, onKeep, onCancel,
+           recast, voice: recast ? state.voice : null, lines: state.lines || [] };
   ui.queue.hidden = !note;
   ui.queue.textContent = note || "";
-  ui.style.value = "";
-  ui.line.value = state.sample_text || "";
+  ui.style.value = cast.voice?.style || "";
+  ui.line.value = cast.voice?.sample_text || state.sample_text || "";
   modal.hidden = false;
+  modal.querySelector(".vc-body").scrollTop = 0;
   draw();
-  suggest();
+  if (!cast.voice) suggest();               // changing a voice starts from the words that made it
   ui.style.focus();
 }
 
 function closeCaster() {
+  if (cast?.job) cast.job.cancelled = true;
   discardSample();
   stop();
   const cancelled = cast?.onCancel;
@@ -289,6 +420,19 @@ function closeCaster() {
 
 // The caster as a question with an answer: the voice when one is accepted, null when it is closed.
 const castAndWait = (state, note) => new Promise(resolve => openCaster(state, v => resolve(v), () => resolve(null), note));
+
+// Change a character's voice (or give them their first), from the Journey header. `who` is { guid, name }.
+export async function changeVoice(who) {
+  if (!token()) return toast({ ok: false, title: "No gate token",
+    text: "Voices are made by the lore gate. Open the Lore panel and enter its token first." });
+  try {
+    const q = who.guid != null ? `guid=${who.guid}` : `name=${encodeURIComponent(who.name)}`;
+    const state = await gate(`/voice?${q}`);
+    openCaster(state, null, null, null, true);
+  } catch (e) {
+    toast({ ok: false, title: "No voice", text: e.message });
+  }
+}
 
 // ---- a line, said ----
 async function speak(who, text, btn) {
