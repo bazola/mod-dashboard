@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { refreshLive } from "../web/js/api.js";
+import { state } from "../web/js/state.js";
+
+test("cold offline start recovers the map and retains explicitly disconnected snapshots", async t => {
+  let online = false;
+  let mapReads = 0;
+  const snapshot = { ts: Math.floor(Date.now() / 1000), players: [], counts: { bots: 3 }, update_ms: { avg: 1 } };
+  t.mock.method(globalThis, "fetch", async url => {
+    if (!online) throw new Error("offline");
+    if (url === "worldmap") mapReads++;
+    return { ok: true, json: async () => url === "bots" ? snapshot : { zones: [], continents: {} } };
+  });
+  state.worldmap = null;
+  state.snap = null;
+  state.conn = { ok: false, ts: 0, text: "Connecting…" };
+  await refreshLive();
+  assert.equal(state.conn.ok, false);
+  assert.equal(state.snap, null);
+  online = true;
+  await refreshLive();
+  assert.equal(state.conn.ok, true);
+  assert.equal(mapReads, 1);
+  assert.equal(state.snap, snapshot);
+  online = false;
+  await refreshLive();
+  assert.equal(state.conn.ok, false);
+  assert.equal(state.conn.ts, snapshot.ts);
+  assert.equal(state.snap, snapshot);
+  online = true;
+  await refreshLive();
+  assert.equal(state.conn.ok, true);
+  assert.equal(mapReads, 1);
+  snapshot.ts -= 120;
+  await refreshLive();
+  assert.equal(state.conn.ok, false);
+  assert.equal(state.conn.ts, snapshot.ts + 120);
+  assert.match(state.conn.text, /stale/);
+});
