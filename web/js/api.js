@@ -1,5 +1,6 @@
 // Server polling. Each loop reschedules itself after it finishes, so slow responses never pile up.
 import { state, emit } from "./state.js";
+import { isAccountingSnapshot } from "./lib/accounting.js";
 
 const REFRESH_MS = 2000;
 const DATA_MS = 30000;
@@ -89,7 +90,28 @@ export function loadArchive(name, force = false) {
   getJSON(`data/${name}.json`).then(doc => land(doc, false), () => land(held?.doc || null, true));
 }
 
+let accountingPending = null;
+export function refreshAccounting() {
+  if (accountingPending) return accountingPending;
+  accountingPending = (async () => {
+    try {
+      const next = await getJSON("data/accounting.json");
+      if (!isAccountingSnapshot(next))
+        throw new Error("Unsupported accounting snapshot");
+      state.accounting = next;
+      state.accountingError = "";
+    } catch {
+      state.accountingError = "Accounting data could not be refreshed.";
+    } finally {
+      accountingPending = null;
+      emit("accounting");
+    }
+  })();
+  return accountingPending;
+}
+
 export function startPolling() {
+  loop(refreshAccounting, DATA_MS);
   loop(async () => {
     try {
       const snap = await getJSON("bots");
