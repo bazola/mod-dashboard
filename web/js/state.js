@@ -25,6 +25,8 @@ export const state = {
   lore: null,             // data/lore.json from gen_backstories.py
   companies: null,        // data/companies.json from regard.py (plan 14)
   chronicle: null,        // data/chronicle.json from chronicler.py (plan 19)
+  accounting: null,
+  accountingError: "",
   market: null,           // data/market.json from market.py (plan 17 §3.E)
   chat: null,             // data/chat.json from regard.py: the party lines, for the Groups panel
   memories: null,         // data/memories.json from regard.py: what the bots still carry (plan 38)
