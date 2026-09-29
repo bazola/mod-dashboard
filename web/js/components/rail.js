@@ -11,6 +11,7 @@ export const PANELS = [
   { id: "chronicle", icon: "scroll", label: "Chronicle", title: "Chronicle", desc: "Each faction scribe's watches and the word going around" },
   { id: "rumours", icon: "message", label: "Rumours", title: "Rumours", desc: "How word travels the roads, and who has been heard passing it on" },
   { id: "market", icon: "coins", label: "Market", title: "Market", desc: "The auction houses: stalls, sales and what goods fetch" },
+  { id: "costs", icon: "coins", label: "Costs", title: "Model costs", desc: "Recorded spending, usage and request purposes" },
   { id: "commands", icon: "terminal", label: "Commands", title: "Commands", desc: "Pause or resume a bot on the world server" },
   { id: "lore", icon: "scroll", label: "Lore", title: "Your own lore", desc: "Write your characters' story, and let the world check it" },
   { id: "memories", icon: "book", label: "Memories", title: "Memories", desc: "What the bots still carry: their deeds and what they made of them" },

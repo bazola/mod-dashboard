@@ -27,6 +27,8 @@ export const state = {
   companies: null,        // data/companies.json from regard.py (plan 14)
   chronicle: null,        // data/chronicle.json from chronicler.py (plan 19)
   rumours: null,          // data/rumours.json from chronicler.py (overheard.py): stories, their spread, who passed them on
+  accounting: null,       // data/accounting.json from accounting.export: model request costs (Costs page)
+  accountingError: "",
   market: null,           // data/market.json from market.py (plan 17 §3.E)
   chat: null,             // data/chat.json from regard.py: the party lines, for the Groups panel
   memories: null,         // data/memories.json from regard.py: what the bots still carry (plan 38)

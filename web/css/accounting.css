@@ -1,0 +1,34 @@
+.cost-title { display: flex; align-items: center; gap: 8px; font-size: 18px; color: var(--gold-text); }
+.cost-content { max-width: 1200px; margin: 0 auto; }
+.cost-note { margin: 12px 0; color: var(--ink-3); font-size: 12px; line-height: 1.6; }
+.cost-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin: 20px 0; align-items: start; }
+.cost-group { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.cost-group b, .cost-request b { overflow-wrap: anywhere; }
+.cost-group strong, .cost-request-end { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+/* Cost values need more room than the shared 72px count tiles. Size by the
+   available container width, including the narrow dock and browser zoom. */
+:is(.cost-page, [data-panel="costs"]) .kpis {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+}
+:is(.cost-page, [data-panel="costs"]) .kpi { min-width: 0; }
+:is(.cost-page, [data-panel="costs"]) .kpi :is(b, span) { overflow-wrap: anywhere; }
+[data-panel="costs"] .kpi:first-child { grid-column: 1 / -1; }
+.cost-page h2 { font-size: 16px; }
+.cost-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.cost-filters .input { flex: 1; min-width: 180px; width: 100%; }
+.cost-request { border-bottom: 1px solid var(--line); }
+.cost-request > summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 4px; cursor: pointer; }
+.cost-request-end { text-align: right; display: grid; gap: 4px; }
+.cost-detail { display: grid; grid-template-columns: 160px 1fr; gap: 8px 16px; padding: 12px; background: var(--bg-2); font-size: 12px; }
+.cost-detail dt { color: var(--ink-3); }
+.cost-detail dd { margin: 0; overflow-wrap: anywhere; }
+.cost-pager { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.cost-page .row-sub { display: block; overflow-wrap: anywhere; white-space: normal; line-height: 1.5; }
+@media (max-width: 760px) {
+  .cost-columns { grid-template-columns: 1fr; }
+  .cost-page .fx-bar .meta { width: 100%; order: 2; }
+  .cost-detail { grid-template-columns: 1fr; gap: 4px; }
+  .cost-detail dd { margin-bottom: 8px; }
+}
+
+.cost-group > div, .cost-request > summary > div { min-width: 0; }

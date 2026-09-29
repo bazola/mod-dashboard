@@ -23,6 +23,8 @@ import { mountJourney } from "./components/journey.js";
 import { mountJourneyFull } from "./components/journey-full.js";
 import { mountInspector } from "./components/inspector.js";
 
+import { mountAccounting } from "./components/accounting.js";
+
 const $ = id => document.getElementById(id);
 
 document.documentElement.dataset.theme = state.theme;
@@ -36,6 +38,7 @@ mountCompanies(panels.companies);
 mountChronicle(panels.chronicle);
 mountRumours(panels.rumours);
 mountMarket(panels.market);
+mountAccounting(panels.costs, document.body);
 mountCommands(panels.commands);
 mountLore(panels.lore);
 mountMemories(panels.memories);
