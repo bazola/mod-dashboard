@@ -128,6 +128,7 @@ export function startPolling() {
   watch("data/regard.json", "regard", DATA_MS);
   watch("data/companies.json", "companies", DATA_MS);
   watch("data/chronicle.json", "chronicle", DATA_MS);
+  watch("data/rumours.json", "rumours", DATA_MS);
   watch("data/lore.json", "lore", LORE_MS);
   watch("data/lore-edit.json", "loreEdit", DATA_MS);
   watch("data/market.json", "market", MARKET_MS);
