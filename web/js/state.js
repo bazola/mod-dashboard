@@ -39,7 +39,7 @@ export const state = {
   archive: new Map(),     // "moments" | "talks" | "ranked" -> { stamp, doc }: the whole of a list, on demand
   commands: null,         // GET /commands
   history: { bots: [], avg: [] },
-  conn: { ok: false, ts: 0, text: "Connecting…" },
+  conn: { ok: false, ts: 0, seen: 0, text: "Connecting…" }, // seen: browser ms of the last fresh snapshot
 
   // UI
   theme: localGet("theme") === "light" ? "light" : "dark",

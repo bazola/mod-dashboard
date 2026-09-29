@@ -32,7 +32,7 @@ Do not point these settings at private ledgers or service state directories.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `DASHBOARD_HOST` | `127.0.0.1` | Listen address |
+| `DASHBOARD_HOST` | `127.0.0.1` | Listen address, or a comma-separated list like `Dashboard.Bind` |
 | `DASHBOARD_PORT` | `8790` | Standalone port, separate from the realm |
 | `DASHBOARD_WORLD_URL` | `http://127.0.0.1:8787` | Worldserver HTTP origin, no path or credentials |
 | `DASHBOARD_TIMEOUT_MS` | `6000` | Upstream deadline, including response body |
@@ -63,7 +63,8 @@ dashboard origin there if your lore-gate installation restricts origins.
 - Live snapshots return an error while the realm is unavailable. The browser
   retains its last snapshot, labels it disconnected with its age, and disables
   pause/resume. On a fresh offline page, the roster says no live data was received.
-- A bot snapshot older than 30 seconds is treated as disconnected even if the
+- A bot snapshot that has not changed for 30 seconds (by the browser's own clock,
+  so a viewer's clock skew does not matter) is treated as disconnected even if the
   HTTP endpoint still responds; commands are disabled until fresh data returns.
 - Polling reconnects automatically, including retrying map geometry after a cold
   offline start. No synthetic zero-player snapshot is produced.
@@ -74,7 +75,8 @@ dashboard origin there if your lore-gate installation restricts origins.
 ## File and API boundaries
 
 The host serves only `index.html`, JS/CSS assets, map art/manifest, and the JSON
-filenames enumerated in `src/files.ts`. Character detail paths accept numeric
+JSON documents and `.mp3`/`.wav` voice lines under the data root (see `src/files.ts`),
+so files added by later features need no list kept in step. Character detail paths accept numeric
 IDs. Dot paths, directory listing, private database files, and symlinks escaping
 the selected root are refused. Configure trusted, dedicated public directories.
 JSON files must parse; their existing per-feature UI contracts remain unchanged.

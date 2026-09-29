@@ -137,20 +137,27 @@ export function startPolling() {
   watch("data/journeys.json", "journeys", JOURNEY_MS);
 }
 
+// Staleness is judged on this browser's clock alone: how long since the snapshot last changed.
+// Comparing snap.ts with Date.now() would mark a live realm dead from a viewer whose clock is off.
+const STALE_MS = 30000;
+let lastTs = null, lastChange = 0;
+
 export async function refreshLive() {
   try {
     const snap = await getJSON("bots");
-    if (!Number.isFinite(snap.ts) || Math.abs(Date.now() / 1000 - snap.ts) > 30)
-      throw new Error("world snapshot is stale");
+    if (!Number.isFinite(snap.ts)) throw new Error("world snapshot has no time");
+    const now = Date.now();
+    if (snap.ts !== lastTs) { lastTs = snap.ts; lastChange = now; }
+    else if (now - lastChange > STALE_MS) throw new Error("world snapshot is stale");
     state.snap = snap;
     state.players = snap.players;
     state.byGuid = new Map(snap.players.map(p => [p.guid, p]));
     push(state.history.bots, snap.counts.bots);
     push(state.history.avg, snap.update_ms.avg);
-    state.conn = { ok: true, ts: snap.ts, text: "" };
+    state.conn = { ok: true, ts: snap.ts, seen: now, text: "" };
     emit("snapshot");
   } catch (e) {
-    state.conn = { ok: false, ts: state.conn.ts, text: e.message };
+    state.conn = { ok: false, ts: state.conn.ts, seen: state.conn.seen, text: e.message };
   }
   emit("conn");
   if (state.conn.ok) {

@@ -16,16 +16,19 @@ export function readConfig(env: NodeJS.ProcessEnv) {
   const result = schema.safeParse(env);
   if (!result.success) throw new Error(`Invalid dashboard settings: ${result.error.issues.map(i => i.path.join(".")).join(", ")}`);
   const value = result.data;
+  // A comma-separated list, like Dashboard.Bind, so loopback and a private network address can both listen.
+  const hosts = [...new Set(value.DASHBOARD_HOST.split(",").map(h => h.trim()).filter(Boolean))];
+  if (!hosts.length) throw new Error("Invalid dashboard settings: DASHBOARD_HOST");
   const upstream = new URL(value.DASHBOARD_WORLD_URL);
   if (!["http:", "https:"].includes(upstream.protocol) || upstream.username || upstream.password
       || upstream.search || upstream.hash || upstream.pathname !== "/") {
     throw new Error("DASHBOARD_WORLD_URL must be an HTTP(S) origin without credentials or a path");
   }
-  if (upstream.hostname === value.DASHBOARD_HOST && Number(upstream.port || (upstream.protocol === "https:" ? 443 : 80)) === value.DASHBOARD_PORT) {
+  if (hosts.includes(upstream.hostname) && Number(upstream.port || (upstream.protocol === "https:" ? 443 : 80)) === value.DASHBOARD_PORT) {
     throw new Error("Dashboard and worldserver must use different listening addresses");
   }
   return {
-    host: value.DASHBOARD_HOST, port: value.DASHBOARD_PORT, upstream: upstream.origin,
+    hosts, port: value.DASHBOARD_PORT, upstream: upstream.origin,
     timeoutMs: value.DASHBOARD_TIMEOUT_MS, webRoot: resolve(value.DASHBOARD_WEB_ROOT),
     dataRoot: value.DASHBOARD_DATA_ROOT ? resolve(value.DASHBOARD_DATA_ROOT) : undefined,
     mapRoot: value.DASHBOARD_MAP_ROOT ? resolve(value.DASHBOARD_MAP_ROOT) : undefined,

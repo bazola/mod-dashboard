@@ -2,16 +2,15 @@ import { open, realpath } from "node:fs/promises";
 import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { Config } from "./config.js";
 
-const published = new Set([
-  "accounting.json", "regard.json", "companies.json", "chronicle.json", "lore.json",
-  "lore-edit.json", "market.json", "chat.json", "memories.json", "journeys.json",
-  "moments.json", "talks.json", "ranked.json",
-]);
+// Every JSON document and recorded voice line under the published data root. The services write new
+// files there as features arrive, so a named list would drift behind the UI and answer 404 in silence.
+const published = /^([\w-]+\/)*[\w-]+\.(json|mp3|wav)$/;
 const contentTypes: Record<string, string> = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
   ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
   ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff2": "font/woff2",
+  ".mp3": "audio/mpeg", ".wav": "audio/wav",
 };
 
 function selectFile(path: string, config: Config) {
@@ -20,7 +19,7 @@ function selectFile(path: string, config: Config) {
   if (parts.some(part => part.startsWith("."))) return;
   if (path.startsWith("data/")) {
     const name = path.slice(5);
-    if (published.has(name) || /^(ties|memories|journeys)\/\d+\.json$/.test(name)) {
+    if (published.test(name)) {
       return { root: config.dataRoot, name };
     }
     return;

@@ -5,10 +5,13 @@ import { createServer } from "./server.js";
 
 const config = readConfig(process.env);
 await access(join(config.webRoot, "index.html"));
-const app = createServer(config);
+// One listener per address; each is a complete host, so a failure on one address stops the process.
+const apps = config.hosts.map(() => createServer(config));
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {
-    void app.close().catch(() => { process.exitCode = 1; });
+    void Promise.all(apps.map(app => app.close())).catch(() => { process.exitCode = 1; });
   });
 }
-console.log(`Living Azeroth dashboard: ${await app.listen({ host: config.host, port: config.port })}`);
+for (const [i, app] of apps.entries()) {
+  console.log(`Living Azeroth dashboard: ${await app.listen({ host: config.hosts[i] ?? "", port: config.port })}`);
+}

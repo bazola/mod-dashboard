@@ -20,7 +20,10 @@ await test("configuration rejects invalid settings and self-proxy addresses", ()
     { DASHBOARD_WORLD_URL: "http://localhost:8787/secret" },
     { DASHBOARD_WORLD_URL: "http://127.0.0.1:8790" },
   ]) assert.throws(() => readConfig(env));
-  assert.equal(readConfig({}).host, "127.0.0.1");
+  assert.deepEqual(readConfig({}).hosts, ["127.0.0.1"]);
+  assert.deepEqual(readConfig({ DASHBOARD_HOST: "127.0.0.1, 100.64.0.1,127.0.0.1" }).hosts, ["127.0.0.1", "100.64.0.1"]);
+  assert.throws(() => readConfig({ DASHBOARD_HOST: " , " }));
+  assert.throws(() => readConfig({ DASHBOARD_HOST: "100.64.0.1,127.0.0.1", DASHBOARD_WORLD_URL: "http://127.0.0.1:8790" }));
 });
 
 await test("serves only published files, including with the realm unavailable", async t => {
@@ -32,6 +35,12 @@ await test("serves only published files, including with the realm unavailable", 
     writeFile(join(web, "index.html"), "<title>Living Azeroth</title>"),
     writeFile(join(data, "accounting.json"), '{"available":true}'),
     writeFile(join(data, "ties", "18.json"), '{"feels":[]}'),
+    writeFile(join(data, "rumours.json"), '{"rumours":[]}'),
+    mkdir(join(data, "voices", "lines"), { recursive: true }).then(() => Promise.all([
+      writeFile(join(data, "voices", "index.json"), '{"lines":{}}'),
+      writeFile(join(data, "voices", "lines", "ab12.mp3"), "ID3"),
+      writeFile(join(data, "voices", "export.zip"), "PRIVATE"),
+    ])),
     writeFile(join(data, "secrets.env"), "PRIVATE"),
     writeFile(join(data, "requests.sqlite"), "PRIVATE"),
     writeFile(join(root, "private.json"), '"PRIVATE"'),
@@ -46,10 +55,16 @@ await test("serves only published files, including with the realm unavailable", 
   assert.equal((await app.inject("/")).statusCode, 200);
   assert.equal((await app.inject("/data/accounting.json")).body, '{"available":true}');
   assert.equal((await app.inject("/data/ties/18.json")).statusCode, 200);
+  // Files added by later features are served without a list to keep in step.
+  assert.equal((await app.inject("/data/rumours.json")).statusCode, 200);
+  assert.equal((await app.inject("/data/voices/index.json")).statusCode, 200);
+  const clip = await app.inject("/data/voices/lines/ab12.mp3");
+  assert.equal(clip.statusCode, 200);
+  assert.equal(clip.headers["content-type"], "audio/mpeg");
   assert.equal((await app.inject("/maps/manifest.json")).statusCode, 200);
   assert.equal((await app.inject("/host-health")).statusCode, 200);
   assert.equal((await app.inject("/bots")).statusCode, 503);
-  for (const path of ["/data/secrets.env", "/data/requests.sqlite", "/data/private.json", "/data/",
+  for (const path of ["/data/secrets.env", "/data/requests.sqlite", "/data/voices/export.zip", "/data/private.json", "/data/",
     "/data/%2e%2e/private.json", "/data/ties/%2e%2e/secrets.env", "/data/ties/18.json:secret",
     "/data/%5c..%5cprivate.json", "/.git/config", "/standalone/package.json"]) {
     const response = await app.inject(path);
