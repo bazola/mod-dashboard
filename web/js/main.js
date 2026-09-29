@@ -64,6 +64,6 @@ document.addEventListener("keydown", e => {
   }
 });
 
+startPolling();
 await loadStatic();
 setContinent(state.continent);
-startPolling();
