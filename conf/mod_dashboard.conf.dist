@@ -34,7 +34,7 @@ Dashboard.SnapshotIntervalMs = 2000
 # Dashboard.WebRoot
 #     Description: Directory served at /. Edits to the page need no restart.
 #     Default:     <SourceDirectory>/modules/mod-dashboard/web
-#                  Leave it unset unless the web/ folder was moved away from the module.
+#                  Leave it blank unless the web/ folder was moved away from the module.
 Dashboard.WebRoot =
 
 # Dashboard.CommandToken
@@ -53,5 +53,5 @@ Dashboard.PauseTeleportHoldSec = 86400
 # Dashboard.MapRoot
 #     Description: Directory of world map PNGs + manifest.json, served at /maps/.
 #                  Blizzard-derived: keep it outside any repository.
-#     Default:     <DataDir>/dashboard-maps
+#     Default:     <DataDir>/dashboard-maps (when blank)
 Dashboard.MapRoot =

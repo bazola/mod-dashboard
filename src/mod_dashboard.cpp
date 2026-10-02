@@ -575,13 +575,18 @@ namespace
         // Defaults must name no particular machine (plan 23 W11). The page ships inside this module,
         // so it is found from the core's source directory; the two generated-data roots sit under the
         // server's DataDir. Both stay overridable for a split install.
-        std::string dataDir = sConfigMgr->GetOption<std::string>("DataDir", ".");
-        std::string webRoot = sConfigMgr->GetOption<std::string>("Dashboard.WebRoot",
+        // The .conf.dist ships these keys blank, and ConfigMgr hands a blank value back as "" rather than
+        // falling back, so blank has to mean the default here or a fresh install serves no page.
+        auto pathOption = [](char const* key, std::string const& fallback)
+        {
+            std::string value = sConfigMgr->GetOption<std::string>(key, fallback);
+            return value.empty() ? fallback : value;
+        };
+        std::string dataDir = pathOption("DataDir", ".");
+        std::string webRoot = pathOption("Dashboard.WebRoot",
             BuiltInConfig::GetSourceDirectory() + "/modules/mod-dashboard/web");
-        std::string mapRoot = sConfigMgr->GetOption<std::string>("Dashboard.MapRoot",
-            dataDir + "/dashboard-maps");
-        std::string dataRoot = sConfigMgr->GetOption<std::string>("Dashboard.DataRoot",
-            dataDir + "/dashboard-data");
+        std::string mapRoot = pathOption("Dashboard.MapRoot", dataDir + "/dashboard-maps");
+        std::string dataRoot = pathOption("Dashboard.DataRoot", dataDir + "/dashboard-data");
 
         std::stringstream ss(bind);
         std::string host;
