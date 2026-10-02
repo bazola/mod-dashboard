@@ -13,6 +13,7 @@ export const PANELS = [
   { id: "market", icon: "coins", label: "Market", title: "Market", desc: "The auction houses: stalls, sales and what goods fetch" },
   { id: "costs", icon: "coins", label: "Costs", title: "Model costs", desc: "Recorded spending, usage and request purposes" },
   { id: "commands", icon: "terminal", label: "Commands", title: "Commands", desc: "Pause or resume a bot on the world server" },
+  { id: "server", icon: "activity", label: "Server", title: "Server", desc: "Realm status, resource use and lifecycle controls" },
   { id: "lore", icon: "scroll", label: "Lore", title: "Your own lore", desc: "Write your characters' story, and let the world check it" },
   { id: "memories", icon: "book", label: "Memories", title: "Memories", desc: "What the bots still carry: their deeds and what they made of them" },
   { id: "journey", icon: "route", label: "Journey", title: "A player's journey", desc: "Everything one character has done, in the order it happened" },
@@ -37,6 +38,7 @@ export function mountRail(rail, dock) {
     title.textContent = current.title;
     desc.textContent = current.desc;
     for (const [id, b] of buttons) {
+      b.hidden = id === "server" && !state.controlAvailable;
       const on = id === current.id && state.dockOpen;
       b.classList.toggle("on", on);
       b.setAttribute("aria-pressed", String(on));
@@ -45,7 +47,7 @@ export function mountRail(rail, dock) {
     collapse.title = state.dockOpen ? "Hide the side panel" : "Show the side panel";
     document.getElementById("app").classList.toggle("dock-closed", !state.dockOpen);
   };
-  on("panel", sync);
+  on("panel host-capabilities", sync);
   sync();
   return panels;
 }

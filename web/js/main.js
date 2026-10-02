@@ -16,6 +16,7 @@ import { mountRumours } from "./components/rumours.js";
 import { mountChronicleReader } from "./components/chronicle-reader.js";
 import { mountMarket } from "./components/market.js";
 import { mountCommands } from "./components/commands.js";
+import { mountServer } from "./components/server.js";
 import { mountLore } from "./components/lore.js";
 import { mountMemories } from "./components/memories.js";
 import { mountMemoriesFull } from "./components/memories-full.js";
@@ -25,6 +26,7 @@ import { mountInspector } from "./components/inspector.js";
 import { mountSettings } from "./components/settings.js";
 
 import { mountAccounting } from "./components/accounting.js";
+import { hasServerControl } from "./lib/host.js";
 
 const $ = id => document.getElementById(id);
 
@@ -41,6 +43,7 @@ mountRumours(panels.rumours);
 mountMarket(panels.market);
 mountAccounting(panels.costs, document.body);
 mountCommands(panels.commands);
+mountServer(panels.server);
 mountLore(panels.lore);
 mountMemories(panels.memories);
 mountJourney(panels.journey);
@@ -52,6 +55,10 @@ mountGroupsGrid(document.body);
 mountMemoriesFull(document.body);
 mountJourneyFull(document.body);
 mountMap($("stage"));
+void hasServerControl().then(available => {
+  state.controlAvailable = available;
+  emit("host-capabilities");
+});
 
 // "/" finds a character, Esc closes the inspector.
 document.addEventListener("keydown", e => {

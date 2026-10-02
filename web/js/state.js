@@ -38,6 +38,7 @@ export const state = {
   journey: new Map(),     // guid -> { stamp, doc }: one character's whole record, fetched on demand
   archive: new Map(),     // "moments" | "talks" | "ranked" -> { stamp, doc }: the whole of a list, on demand
   commands: null,         // GET /commands
+  controlAvailable: false, // Optional standalone host capability, never assumed from the UI assets.
   history: { bots: [], avg: [] },
   conn: { ok: false, ts: 0, seen: 0, text: "Connecting…" }, // seen: browser ms of the last fresh snapshot
 
