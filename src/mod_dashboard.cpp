@@ -868,13 +868,14 @@ public:
         };
         auto addGroup = [&](std::string const& prefix)
         {
-            std::string file = sConfigMgr->GetOption<std::string>(prefix + ".File", "");
+            // A group may leave any of these out, so a missing one is not worth a warning.
+            std::string file = sConfigMgr->GetOption<std::string>(prefix + ".File", "", false);
             if (!file.empty() && std::filesystem::path(file).is_relative())
                 file = (std::filesystem::path(sConfigMgr->GetConfigPath()) / file).string();
-            std::string reload = sConfigMgr->GetOption<std::string>(prefix + ".ReloadCommand", "");
+            std::string reload = sConfigMgr->GetOption<std::string>(prefix + ".ReloadCommand", "", false);
             std::unordered_map<std::string, DashboardSettings::Rule> rules;
             std::set<std::string> invalidRules;
-            for (auto const& entry : words(sConfigMgr->GetOption<std::string>(prefix + ".Types", "")))
+            for (auto const& entry : words(sConfigMgr->GetOption<std::string>(prefix + ".Types", "", false)))
             {
                 auto separator = entry.find(':');
                 auto key = entry.substr(0, separator);
@@ -886,7 +887,7 @@ public:
                     LOG_ERROR("module", "[Dashboard] Invalid or duplicate type rule for '{}'; excluded", key);
                 }
             }
-            for (std::string const& key : words(sConfigMgr->GetOption<std::string>(prefix + ".Keys", "")))
+            for (std::string const& key : words(sConfigMgr->GetOption<std::string>(prefix + ".Keys", "", false)))
             {
                 if (!DashboardSettings::AllowedKey(key))
                 {
