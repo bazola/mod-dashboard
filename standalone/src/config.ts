@@ -10,6 +10,13 @@ const schema = z.object({
   DASHBOARD_WEB_ROOT: z.string().min(1).default(fileURLToPath(new URL("../../web", import.meta.url))),
   DASHBOARD_DATA_ROOT: z.string().min(1).optional(),
   DASHBOARD_MAP_ROOT: z.string().min(1).optional(),
+  DASHBOARD_CONTROL_URL: z.url().optional(),
+  DASHBOARD_CONTROL_HOST_HEADER: z.string().regex(/^[a-zA-Z0-9.-]+:\d{1,5}$/).optional(),
+  DASHBOARD_CONTROL_TOKEN: z.string().min(32).optional(),
+  DASHBOARD_CONTROL_PROTOCOL: z.enum(["legacy-admin", "v1"]).optional(),
+  DASHBOARD_CONTROL_BACKEND_TOKEN: z.string().min(32).optional(),
+  DASHBOARD_CONTROL_REALM_UNIT: z.string().min(1).optional(),
+  DASHBOARD_CONTROL_DATABASE_UNIT: z.string().min(1).optional(),
 });
 
 export function readConfig(env: NodeJS.ProcessEnv) {
@@ -27,11 +34,33 @@ export function readConfig(env: NodeJS.ProcessEnv) {
   if (hosts.includes(upstream.hostname) && Number(upstream.port || (upstream.protocol === "https:" ? 443 : 80)) === value.DASHBOARD_PORT) {
     throw new Error("Dashboard and worldserver must use different listening addresses");
   }
+  if (Boolean(value.DASHBOARD_CONTROL_URL) !== Boolean(value.DASHBOARD_CONTROL_TOKEN))
+    throw new Error("Control URL and token must both be set");
+  if (!value.DASHBOARD_CONTROL_URL && [value.DASHBOARD_CONTROL_HOST_HEADER, value.DASHBOARD_CONTROL_PROTOCOL,
+    value.DASHBOARD_CONTROL_BACKEND_TOKEN, value.DASHBOARD_CONTROL_REALM_UNIT, value.DASHBOARD_CONTROL_DATABASE_UNIT].some(Boolean))
+    throw new Error("Control options require a control URL");
+  const protocol = value.DASHBOARD_CONTROL_PROTOCOL ?? "legacy-admin";
+  if (protocol === "v1" && (!value.DASHBOARD_CONTROL_BACKEND_TOKEN || value.DASHBOARD_CONTROL_REALM_UNIT || value.DASHBOARD_CONTROL_DATABASE_UNIT))
+    throw new Error("Control v1 requires a backend token and does not use legacy unit names");
+  if (protocol === "legacy-admin" && value.DASHBOARD_CONTROL_BACKEND_TOKEN)
+    throw new Error("Backend token requires control v1");
+  const control = value.DASHBOARD_CONTROL_URL ? new URL(value.DASHBOARD_CONTROL_URL) : null;
+  if (control && (control.protocol !== "http:" && control.protocol !== "https:" || control.username || control.password || control.search || control.hash || control.pathname !== "/"))
+    throw new Error("Control URL must be an HTTP(S) origin without credentials or a path");
   return {
     hosts, port: value.DASHBOARD_PORT, upstream: upstream.origin,
     timeoutMs: value.DASHBOARD_TIMEOUT_MS, webRoot: resolve(value.DASHBOARD_WEB_ROOT),
     dataRoot: value.DASHBOARD_DATA_ROOT ? resolve(value.DASHBOARD_DATA_ROOT) : undefined,
     mapRoot: value.DASHBOARD_MAP_ROOT ? resolve(value.DASHBOARD_MAP_ROOT) : undefined,
+    control: control && value.DASHBOARD_CONTROL_TOKEN ? {
+      origin: control.origin,
+      hostHeader: value.DASHBOARD_CONTROL_HOST_HEADER ?? control.host,
+      token: value.DASHBOARD_CONTROL_TOKEN,
+      protocol,
+      backendToken: value.DASHBOARD_CONTROL_BACKEND_TOKEN,
+      realmUnit: value.DASHBOARD_CONTROL_REALM_UNIT ?? "hdm-workshop",
+      databaseUnit: value.DASHBOARD_CONTROL_DATABASE_UNIT ?? "hdm-database",
+    } : null,
   };
 }
 

@@ -2,8 +2,10 @@
 
 The optional Node host serves the existing Living Azeroth UI while the realm is
 stopped. It reads published JSON and map files from disk and forwards the small
-live API to mod-dashboard. It does not open databases, run generators, or start
-and stop the realm. The C++ module and its existing hosting mode still work.
+live API to mod-dashboard. It does not open databases or run generators. An
+optional, separately configured control adapter can read server status and
+request start/stop through a local admin service. The C++ module and its
+existing hosting mode still work.
 
 ## Run
 
@@ -39,11 +41,26 @@ Do not point these settings at private ledgers or service state directories.
 | `DASHBOARD_WEB_ROOT` | Module's `web/` | Existing frontend assets |
 | `DASHBOARD_DATA_ROOT` | Unset | Published JSON root; absent files return 404 |
 | `DASHBOARD_MAP_ROOT` | Unset | Map art root; absent art uses existing fallback |
+| `DASHBOARD_CONTROL_URL` | Unset | HTTP(S) origin of the management backend |
+| `DASHBOARD_CONTROL_TOKEN` | Unset | At least 32 characters; required with the control URL |
+| `DASHBOARD_CONTROL_HOST_HEADER` | URL host | Override the admin service's expected Host header, if needed |
+| `DASHBOARD_CONTROL_PROTOCOL` | `legacy-admin` | Existing local admin protocol or portable `v1` |
+| `DASHBOARD_CONTROL_BACKEND_TOKEN` | Unset | Separate backend bearer token; required for `v1` |
+| `DASHBOARD_CONTROL_REALM_UNIT` | `hdm-workshop` | Legacy realm container name |
+| `DASHBOARD_CONTROL_DATABASE_UNIT` | `hdm-database` | Legacy database container name |
+
+The optional Server tab shows realm state, resource use and start/stop controls
+while the realm is offline. It is hidden unless the standalone host has control
+configured, including in the original worldserver-hosted UI. Enter the control
+token in the panel to connect. Management requires a separate backend service;
+see [CONTROL.md](CONTROL.md) for its complete wire contract, credentials,
+Docker Desktop setup and a portable protocol suitable for systemd adapters.
+Do not expose the legacy backend publicly: it issues unauthenticated sessions.
 
 Command tokens stay in the browser and are verified by the worldserver. Nothing
 in this host stores them. A different port is a different browser origin, so
 existing browser preferences and tokens are not automatically transferred.
-Only pause/resume are forwarded, once per request. Unconfirmed delivery must be
+Pause/resume and settings writes are forwarded once per request. Unconfirmed delivery must be
 checked in command history before a user retries. Cross-origin command requests
 are rejected; no CORS access is added.
 
@@ -135,6 +152,7 @@ python tests/accounting_browser.py --browser edge
 ```
 
 The standalone test launches the real built host, a controllable local realm,
-and the full UI. It checks cold offline costs/lore, reconnect, map retry, snapshot
-age, disabled commands, and offline reload. No model calls or real game commands
-are made. Optional `--artifacts /outside/the/repository` saves screenshots.
+a fake admin service, and the full UI. It checks server controls and charts,
+cold offline costs/lore, reconnect, map retry, snapshot age, disabled commands,
+offline reload, authenticated settings saves and read-only settings on desktop/mobile. No model calls or real game commands are made. Optional
+`--artifacts /outside/the/repository` saves screenshots.
