@@ -8,7 +8,8 @@ exposed by default.
 Configure `Dashboard.CommandToken` (at least 16 characters) and enter that token
 in the dashboard's Commands panel. Keep tokens and model API keys out of the
 settings allowlist. C++ rejects `Dashboard.*` keys and names containing `Token`,
-`Password`, `Secret` or `ApiKey`, case-insensitively, before publishing values or
+`Password`, `Secret`, `ApiKey` or `DatabaseInfo` (which holds a database
+password), case-insensitively, before publishing values or
 accepting writes. A group with no file is read-only.
 
 For chat and playerbot settings in separate files:

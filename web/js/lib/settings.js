@@ -6,7 +6,7 @@ export const KNOWN = {
   "AiPlayerbot.PersistentProgression": { label: "Persistent progression mode", kind: "int", min: 0, max: 2, group: "Playerbots",
     help: "0: off. 1: protect all random bots after provisioning. 2: protect anchored bots only; unmet bots keep configured maintenance. Enable anchor on meeting below to record human encounters automatically. Bots can still log out or teleport." },
   "AiPlayerbot.PersistentProgression.AnchorOnMeeting": { label: "Anchor bots when players meet them", kind: "bool", group: "Playerbots",
-    help: "Requires persistence mode 1 or 2 and the encounter tracking module update. A human whisper, selected-bot say, shared party (including LFG), completed trade or targeted friendly emote anchors that bot to the first human. Existing anchors are kept; new interactions only. Use mode 2 to protect met bots only." },
+    help: "Requires persistence mode 1 or 2. A human whisper, selected-bot say, shared party (including LFG), completed trade or targeted friendly emote anchors that bot to the first human. Existing anchors are kept; new interactions only. Use mode 2 to protect met bots only." },
   "AiPlayerbot.PersistentProgression.FollowGap": { label: "Anchor level catch-up gap", kind: "int", min: 0, max: 80, group: "Playerbots",
     help: "Mode 2 only. 0: earned leveling only. Otherwise, raise an anchored bot that falls this many levels behind its anchor to 1–3 levels below them, when out of view and not grouped with a human." },
   "AiPlayerbot.PersistentProgression.AnchorInterval": { label: "Anchor reload interval (seconds)", kind: "int", min: 30, group: "Playerbots",

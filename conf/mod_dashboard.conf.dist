@@ -93,8 +93,8 @@ Dashboard.Settings.Groups = ""
 #     Set explicit bool rules for 0/1 switches; otherwise numeric values infer as integers.
 #     Example: AiPlayerbot.PersistentProgression:int:0:2,AiPlayerbot.ResetBotLevel.Enabled:bool
 #     Example: OllamaChat.Conversation.HoldSeconds:int:10:3600,OllamaChat.Conversation.MaxDistance:number:5:100
-#     Dashboard.* keys and names containing Token, Password, Secret or ApiKey are always rejected,
-#     case-insensitively. They cannot be exposed or made writable through an allowlist.
+#     Dashboard.* keys and names containing Token, Password, Secret, ApiKey or DatabaseInfo
+#     (a database password) are always rejected, case-insensitively. They cannot be exposed or made writable through an allowlist.
 Dashboard.Settings.Types = ""
 
 # Dashboard.PauseTeleportHoldSec

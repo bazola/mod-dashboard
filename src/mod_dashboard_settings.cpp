@@ -63,7 +63,8 @@ namespace DashboardSettings
         auto lower = Lower(key);
         if (lower.rfind("dashboard.", 0) == 0)
             return false;
-        for (auto const* secret : { "token", "password", "secret", "apikey" })
+        // *DatabaseInfo holds a database password without saying so in its name.
+        for (auto const* secret : { "token", "password", "secret", "apikey", "databaseinfo" })
             if (lower.find(secret) != std::string::npos)
                 return false;
         return true;

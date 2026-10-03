@@ -43,7 +43,8 @@ int main()
         Check(Read(file).find("Prompt = \"two words\"\r\n") != std::string::npos, "spaces not quoted");
         auto unchanged = Read(file);
         for (auto const* key : { "Dashboard.CommandToken", "dashboard.Settings.chat.File", "Some.TOKEN", "Some.Password",
-                                "Some.secret", "Provider.ApiKey", "Bad Key" })
+                                "Some.secret", "Provider.ApiKey", "LoginDatabaseInfo",
+                                "PlayerbotsDatabaseInfo", "Bad Key" })
         {
             Check(!DashboardSettings::AllowedKey(key), "unsafe key allowlisted");
             Check(!DashboardSettings::Write(file, key, "1").empty(), "unsafe key written");
